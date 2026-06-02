@@ -1,0 +1,1 @@
+ALTER TABLE public.experiences ADD COLUMN itinerary jsonb DEFAULT NULL;

@@ -1,0 +1,70 @@
+---
+description: Manual de marca BePelican (oficial) — colores, tipografía, logo, tono. Siempre aplicar en diseño, UI y copy.
+alwaysApply: true
+---
+
+# Manual de marca BePelican
+
+**Documento oficial:** `docs/brand-manual/manual-bepelican.pdf` (Canva, Diana Bejarano, 2024)  
+**Implementación en código:** `src/index.css` + `tailwind.config.ts`
+
+## Eslogan
+
+**Turismo de transformación**
+
+## Identidad visual
+
+- **Logotipo oficial (wordmark completo):** `docs/brand-manual/logos/logo-bepelican-primary.png` — turquesa #08949B, sin fondo; usar siempre el wordmark **BePelican** completo, nunca solo la B/isotipo cuadrado
+- **Emails:** `emails/assets/logo-bepelican.png` (copia del oficial)
+- **App:** `src/assets/logo-primary.png` (mismo asset)
+- No deformar, no recortar, no cambiar colores del logo
+- Estética: cálida, auténtica, territorios colombianos, fotografía natural (manual: sección Estética y fotografías)
+
+## Paleta oficial (solo estos hex)
+
+| Hex | Token Tailwind | Rol |
+|-----|----------------|-----|
+| #08949B | `bepelican-turquoise` / `primary` | Color principal de marca |
+| #89A632 | `bepelican-green` / `success` | Naturaleza, confirmación |
+| #F98419 | `bepelican-orange` / `accent` | CTAs, energía, highlights |
+| #A7A9AC | `bepelican-gray` | Neutro secundario |
+| #E1B58D | `bepelican-beige` | Cálido, fondos suaves |
+| #BB7B58 | `bepelican-brown` | Tierra, artesanías |
+| #1C2F48 | `bepelican-deepblue` / `secondary` | Texto, profundidad, footer |
+
+Usar clases `text-bepelican-*`, `bg-bepelican-*`, `border-bepelican-*` — **nunca** hex sueltos ni colores genéricos de Tailwind (blue-500, etc.).
+
+## Tipografía
+
+| Uso | Fuente | Clase |
+|-----|--------|-------|
+| Títulos, display | **Architects Daughter** | `font-display` |
+| Cuerpo, párrafos | **Lora** (serif) | `font-sans`, `font-body` |
+| Apoyo CJK (si aplica) | Microsoft JhengHei | solo casos especiales |
+
+No usar Inter, Roboto, system-ui sans en UI pública BePelican.
+
+## UI (patrones del proyecto)
+
+- CTA principal: `bg-bepelican-orange hover:bg-bepelican-orange/90 text-white rounded-full`
+- Links / acentos: `text-bepelican-orange` o `text-primary`
+- Cards: `rounded-2xl`, borde sutil, hover `border-bepelican-orange/50`
+- Texto principal: `text-foreground` (deep blue #1C2F48)
+
+## Tono de voz
+
+- Cercano, transformador, comunidades locales, Colombia auténtica
+- Marca escrita: **BePelican** (B y P mayúsculas)
+- Español Colombia por defecto
+
+## Prohibido
+
+- Colores fuera de la paleta
+- Sans genéricas en páginas públicas
+- Deformar logo o isotipo
+- Estética corporate fría / stock genérico sin alma local
+
+## Ante duda
+
+1. Consultar `docs/brand-manual/manual-bepelican.pdf`
+2. Verificar tokens en `src/index.css`

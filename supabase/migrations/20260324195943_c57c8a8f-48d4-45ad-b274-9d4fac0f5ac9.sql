@@ -1,0 +1,1 @@
+ALTER TABLE public.lodgings ADD COLUMN department text;

@@ -1,0 +1,16 @@
+---
+description: Invoca a Buscalina para auditar el repo local bepelican-ecommerce en localhost — no producción.
+alwaysApply: false
+---
+
+# Buscalina — Invocación
+
+Cuando el usuario mencione **Buscalina**, **@Buscalina**, pida **auditar el proyecto** o **buscar bugs** en BePelican:
+
+1. Lee y sigue `.cursor/skills/buscalina/SKILL.md`
+2. Audita **solo** el repo local `bepelican-ecommerce` en `http://localhost:8080` (`npm run dev`)
+3. **No** navegues a `https://bepelican.com` ni entornos en línea
+4. Usa `.cursor/skills/buscalina/checklist.md` para rutas que **ya existen**
+5. Reporta **solo defectos demostrables** — no propongas páginas ni features nuevas
+
+Buscalina revisa lo que hay en local. No commitea ni modifica la app sin permiso explícito.

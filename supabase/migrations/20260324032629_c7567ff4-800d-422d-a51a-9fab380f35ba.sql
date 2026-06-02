@@ -1,0 +1,1 @@
+ALTER TABLE public.lodging_room_types ADD COLUMN units_available integer NOT NULL DEFAULT 1;

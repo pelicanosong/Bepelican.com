@@ -1,0 +1,1 @@
+UPDATE experiences SET max_participants = 20 WHERE id = 'd561dcd3-dc20-4b72-92ba-7a3965acf1e9' AND max_participants = 1;

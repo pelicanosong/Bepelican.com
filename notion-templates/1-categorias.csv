@@ -1,0 +1,6 @@
+nombre,slug,icono,color,orden,activa,supabase_id
+Historia y patrimonio,historia-patrimonio,📖,#08949B,0,Sí,d14f64a7-1725-443f-8978-85505c5bc191
+Naturaleza y deporte,naturaleza-y-deporte,🚵🏼,#08949B,0,Sí,0093f4a5-2dcd-4dd0-ac85-9a7b22fdd683
+Turismo comunitario y rural,turismo-comunitario-y-rural,🏡,#08949B,0,Sí,bf176c22-0e8b-4f71-8e3d-67520769e1b4
+Experiencias urbanas,experiencias-urbanas,🌆,#08949B,0,Sí,caa8d676-53ec-4a95-bed2-5b3930f40c62
+Gastronomía,gastronomia,🥑,#08949B,0,Sí,725b1c71-3e33-4c85-ac7e-94770c18c5bb

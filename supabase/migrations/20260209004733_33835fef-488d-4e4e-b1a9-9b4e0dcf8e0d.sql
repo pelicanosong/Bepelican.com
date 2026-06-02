@@ -1,0 +1,1 @@
+UPDATE public.flipbooks SET status = 'published' WHERE id = 'b6c102c1-809e-4180-bc05-accc37271f55' AND status = 'draft';

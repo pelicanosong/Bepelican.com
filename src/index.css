@@ -1,0 +1,153 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* BePelican Tourism Ecommerce Design System */
+/* Brand Colors from Manual de Marca */
+
+@layer base {
+  :root {
+    /* BePelican Brand Palette */
+    --bepelican-turquoise: 178 89% 32%; /* #08949B */
+    --bepelican-green: 77 57% 42%; /* #89A632 */
+    --bepelican-orange: 30 95% 54%; /* #F98419 */
+    --bepelican-gray: 210 2% 67%; /* #A7A9AC */
+    --bepelican-beige: 30 55% 72%; /* #E1B58D */
+    --bepelican-brown: 18 41% 54%; /* #BB7B58 */
+    --bepelican-deepblue: 213 45% 20%; /* #1C2F48 */
+    
+    /* Core palette */
+    --background: 0 0% 100%;
+    --foreground: 213 45% 20%; /* Deep blue as main text */
+    
+    /* Primary: Turquoise (main brand color) */
+    --primary: 178 89% 32%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 178 89% 28%;
+    
+    /* Secondary: Deep blue */
+    --secondary: 213 45% 20%;
+    --secondary-foreground: 0 0% 100%;
+    
+    /* Accent: Orange for CTAs */
+    --accent: 30 95% 54%;
+    --accent-foreground: 0 0% 100%;
+    
+    /* Muted elements */
+    --muted: 30 20% 96%;
+    --muted-foreground: 213 30% 45%;
+    
+    /* Borders and inputs */
+    --border: 210 10% 85%;
+    --input: 210 10% 90%;
+    --ring: 178 89% 32%;
+    
+    /* Cards and surfaces */
+    --card: 0 0% 100%;
+    --card-foreground: 213 45% 20%;
+    
+    --popover: 0 0% 100%;
+    --popover-foreground: 213 45% 20%;
+    
+    /* Status and feedback */
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --success: 77 57% 42%; /* Green */
+    --success-foreground: 0 0% 100%;
+    
+    --warning: 30 95% 54%; /* Orange */
+    --warning-foreground: 0 0% 100%;
+    
+    --radius: 0.5rem;
+    
+    /* Transitions */
+    --transition-smooth: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+
+    /* Sidebar */
+    --sidebar-background: 30 20% 98%;
+    --sidebar-foreground: 213 45% 20%;
+    --sidebar-primary: 178 89% 32%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 30 20% 95%;
+    --sidebar-accent-foreground: 213 45% 20%;
+    --sidebar-border: 210 10% 90%;
+    --sidebar-ring: 178 89% 32%;
+    
+    /* Status bar */
+    --status-bar: 213 45% 20%;
+    --status-bar-foreground: 0 0% 100%;
+    
+    /* Navigation */
+    --nav-background: 0 0% 100%;
+    --nav-foreground: 213 45% 20%;
+    --nav-hover: 178 89% 32%;
+  }
+
+  .dark {
+    --background: 213 45% 12%;
+    --foreground: 0 0% 98%;
+    
+    --primary: 178 80% 45%;
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 178 80% 50%;
+    
+    --secondary: 30 20% 90%;
+    --secondary-foreground: 213 45% 15%;
+    
+    --accent: 30 90% 55%;
+    --accent-foreground: 0 0% 100%;
+    
+    --muted: 213 40% 18%;
+    --muted-foreground: 210 10% 70%;
+    
+    --border: 213 30% 25%;
+    --input: 213 30% 20%;
+    --ring: 178 80% 45%;
+    
+    --card: 213 40% 15%;
+    --card-foreground: 0 0% 98%;
+    
+    --popover: 213 40% 15%;
+    --popover-foreground: 0 0% 98%;
+    
+    --destructive: 0 70% 50%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --sidebar-background: 213 40% 10%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 178 80% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 213 30% 20%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 213 30% 25%;
+    --sidebar-ring: 178 80% 45%;
+    
+    --status-bar: 213 45% 8%;
+    --status-bar-foreground: 0 0% 100%;
+    
+    --nav-background: 213 45% 12%;
+    --nav-foreground: 0 0% 95%;
+    --nav-hover: 178 80% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Lora', serif;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Architects Daughter', cursive;
+    @apply text-foreground;
+  }
+}
+
+/* Import Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');

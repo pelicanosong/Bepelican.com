@@ -1,0 +1,13 @@
+project_id = "faobrifmlrgxaejnwmep"
+
+[functions.wompi-create-transaction]
+verify_jwt = false
+
+[functions.wompi-webhook]
+verify_jwt = false
+
+[functions.sitemap]
+verify_jwt = false
+
+[functions.prerender]
+verify_jwt = false

@@ -1,0 +1,1 @@
+ALTER TABLE public.experiences ADD COLUMN lodging_required boolean NOT NULL DEFAULT false;
