@@ -1,5 +1,9 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
+import {
+  getFlipbookLibraryBasePath,
+  resolveFlipbookSlug,
+} from '@/lib/flipbookSlugAliases';
 
 const LIBRERIA_SEO = {
   title: 'Guías de viaje de Colombia, rutas y experiencias locales | BePelican',
@@ -16,7 +20,11 @@ import { cn } from '@/lib/utils';
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Bitacora = () => {
-  const { slug } = useParams<{ slug?: string }>();
+  const { slug: urlSlug } = useParams<{ slug?: string }>();
+  const location = useLocation();
+  const basePath = getFlipbookLibraryBasePath(location.pathname);
+  const slug = urlSlug ? resolveFlipbookSlug(urlSlug) : undefined;
+  const displaySlug = urlSlug ?? slug;
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedFlipbook, setSelectedFlipbook] = useState<Flipbook | null>(null);
@@ -70,16 +78,16 @@ const Bitacora = () => {
     search: searchTerm || undefined,
   });
 
-  const { data: fullFlipbook } = useFlipbook(selectedFlipbook?.slug || slug || '');
+  const { data: fullFlipbook } = useFlipbook(selectedFlipbook?.slug || displaySlug || '');
 
-  // Auto-open from URL slug
-  const { data: slugFlipbook } = useFlipbook(slug || '');
+  // Auto-open from URL slug (incluye alias /libreria/...)
+  const { data: slugFlipbook } = useFlipbook(displaySlug || '');
   useEffect(() => {
-    if (slug && slugFlipbook && !isModalOpen && !selectedFlipbook) {
+    if (displaySlug && slugFlipbook && !isModalOpen && !selectedFlipbook) {
       setSelectedFlipbook(slugFlipbook);
       setIsModalOpen(true);
     }
-  }, [slug, slugFlipbook]);
+  }, [displaySlug, slugFlipbook, isModalOpen, selectedFlipbook]);
 
   // Dynamic SEO when a flipbook is open
   const activeFlipbook = fullFlipbook || selectedFlipbook;
@@ -91,6 +99,9 @@ const Bitacora = () => {
 
     const BASE_URL = 'https://bepelican.com';
     const fbUrl = `${BASE_URL}/biblioteca/${activeFlipbook.slug}`;
+    const pageUrl = urlSlug
+      ? `${BASE_URL}${basePath}/${urlSlug}`
+      : `${BASE_URL}${basePath}`;
     const title = `${activeFlipbook.title} | Guía de viaje Colombia | BePelican`;
     const description = activeFlipbook.description
       ? activeFlipbook.description.substring(0, 160)
@@ -101,9 +112,10 @@ const Bitacora = () => {
     setMeta('name', 'description', description);
     setMeta('property', 'og:title', title);
     setMeta('property', 'og:description', description);
-    setMeta('property', 'og:url', fbUrl);
+    setMeta('property', 'og:url', pageUrl);
     setMeta('property', 'og:type', 'article');
     setMeta('property', 'og:image', image);
+    // SEO: URL canónica siempre en /biblioteca/{slug real}
     setCanonical(fbUrl);
 
     // JSON-LD structured data
@@ -163,13 +175,13 @@ const Bitacora = () => {
   const handleFlipbookClick = (flipbook: Flipbook) => {
     setSelectedFlipbook(flipbook);
     setIsModalOpen(true);
-    window.history.pushState({}, '', `/biblioteca/${flipbook.slug}`);
+    window.history.pushState({}, '', `${basePath}/${flipbook.slug}`);
   };
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedFlipbook(null);
-    window.history.pushState({}, '', '/biblioteca');
+    window.history.pushState({}, '', basePath);
   };
 
   const isLoading = flipbooksLoading || categoriesLoading;

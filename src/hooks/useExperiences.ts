@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
+import { withResolvedMedia } from '@/lib/mediaUrl';
 
 type Experience = Tables<'experiences'>;
 type Category = Tables<'categories_experience'>;
@@ -16,6 +17,59 @@ export interface ExperienceFilters {
   city?: string;
   minParticipants?: number;
 }
+
+/** Listados: sin gallery_images (solo se usa en ficha detalle). */
+const EXPERIENCE_LIST_SELECT = [
+  'id',
+  'slug',
+  'title',
+  'description',
+  'short_description',
+  'cover_image',
+  'created_at',
+  'updated_at',
+  'display_order',
+  'status',
+  'price',
+  'pricing_type',
+  'duration_minutes',
+  'duration_unit',
+  'max_participants',
+  'min_participants',
+  'location_city',
+  'location_name',
+  'location_department',
+  'location_country',
+  'location_address',
+  'location_lat',
+  'location_lng',
+  'environment_type',
+  'difficulty',
+  'difficulty_notes',
+  'languages',
+  'extra_language_cost',
+  'meeting_point_url',
+  'end_point_same',
+  'end_point',
+  'start_time',
+  'start_time_flexible',
+  'available_days',
+  'temperature_range',
+  'recommended_season',
+  'arrival_tips',
+  'requirements',
+  'includes',
+  'not_includes',
+  'itinerary',
+  'lodging_required',
+  'cancellation_policy_type',
+  'cancellation_policy',
+  'accessibility_notes',
+  'accessible_children',
+  'accessible_reduced_mobility',
+  'upsell_priority',
+  '"Se aceptan mascotas"',
+].join(', ');
 
 export const useExperiences = (filters?: ExperienceFilters) => {
   return useQuery({
@@ -53,7 +107,7 @@ export const useExperiences = (filters?: ExperienceFilters) => {
 
       let query = supabase
         .from('experiences')
-        .select('*')
+        .select(EXPERIENCE_LIST_SELECT)
         .eq('status', 'activa');
 
       // Apply DB-level ordering based on sort mode
@@ -123,11 +177,13 @@ export const useExperiences = (filters?: ExperienceFilters) => {
         if (cat) expCategoriesMap[link.experience_id].push(cat);
       });
 
-      const result = experiences.map(exp => ({
-        ...exp,
-        category: expCategoriesMap[exp.id]?.[0] || null,
-        categories: expCategoriesMap[exp.id] || [],
-      })) as ExperienceWithCategory[];
+      const result = experiences.map((exp) =>
+        withResolvedMedia({
+          ...exp,
+          category: expCategoriesMap[exp.id]?.[0] || null,
+          categories: expCategoriesMap[exp.id] || [],
+        })
+      ) as ExperienceWithCategory[];
 
       // Shuffle for random mode
       if (sortMode === 'random') {
@@ -172,11 +228,11 @@ export const useExperience = (slug: string) => {
         categories = cats || [];
       }
 
-      return {
+      return withResolvedMedia({
         ...exp,
         category: categories[0] || null,
         categories,
-      } as ExperienceWithCategory;
+      }) as ExperienceWithCategory;
     },
     enabled: !!slug
   });

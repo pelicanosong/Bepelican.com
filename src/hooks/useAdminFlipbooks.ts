@@ -2,6 +2,7 @@
  import { supabase } from '@/integrations/supabase/client';
  import { useToast } from '@/hooks/use-toast';
  import type { QueryEnabledOptions } from '@/lib/queryClient';
+ import { parseStoragePublicUrl } from '@/lib/mediaUrl';
  
  export interface AdminFlipbook {
    id: string;
@@ -279,12 +280,40 @@ export interface FlipbookFormData {
  
    return useMutation({
      mutationFn: async (id: string) => {
-       const { error } = await supabase
+       const { data: row, error: fetchError } = await supabase
+         .from('flipbooks')
+         .select('id, pdf_url, cover_image')
+         .eq('id', id)
+         .single();
+
+       if (fetchError) throw fetchError;
+
+       const { data: deleted, error } = await supabase
          .from('flipbooks')
          .delete()
-         .eq('id', id);
- 
+         .eq('id', id)
+         .select('id');
+
        if (error) throw error;
+       if (!deleted?.length) {
+         throw new Error(
+           'No se eliminó el registro. Revisá que tu usuario tenga rol admin en Supabase.'
+         );
+       }
+
+       const storagePaths: string[] = [];
+       for (const url of [row.pdf_url, row.cover_image]) {
+         const parsed = parseStoragePublicUrl(url);
+         if (parsed?.bucket === 'flipbooks') storagePaths.push(parsed.path);
+       }
+       if (storagePaths.length) {
+         const { error: storageError } = await supabase.storage
+           .from('flipbooks')
+           .remove(storagePaths);
+         if (storageError) {
+           console.warn('Storage cleanup after flipbook delete:', storageError.message);
+         }
+       }
      },
      onSuccess: () => {
        queryClient.invalidateQueries({ queryKey: ['admin-flipbooks'] });

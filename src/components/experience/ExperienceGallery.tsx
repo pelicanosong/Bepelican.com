@@ -3,6 +3,7 @@ import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ExperienceImage } from '@/components/experience/ExperienceImage';
 
 interface ExperienceGalleryProps {
   coverImage: string | null;
@@ -17,11 +18,10 @@ const ExperienceGallery = ({ coverImage, galleryImages, title }: ExperienceGalle
   const touchStartX = useRef<number | null>(null);
   const touchEndX = useRef<number | null>(null);
 
-  // Build array: cover first, then gallery
   const allImages: string[] = [];
   if (coverImage) allImages.push(coverImage);
   if (galleryImages) {
-    galleryImages.forEach(img => {
+    galleryImages.forEach((img) => {
       if (img && img !== coverImage) allImages.push(img);
     });
   }
@@ -40,52 +40,93 @@ const ExperienceGallery = ({ coverImage, galleryImages, title }: ExperienceGalle
     return (
       <div
         className="aspect-video md:aspect-video aspect-[4/3] rounded-lg overflow-hidden bg-muted cursor-pointer"
-        onClick={() => { setZoomIndex(0); setIsZoomOpen(true); }}
+        onClick={() => {
+          setZoomIndex(0);
+          setIsZoomOpen(true);
+        }}
       >
-        <img src={allImages[0]} alt={title} className="w-full h-full object-cover" />
-        <ZoomModal images={allImages} index={zoomIndex} isOpen={isZoomOpen} onClose={() => setIsZoomOpen(false)} title={title} />
+        <ExperienceImage
+          src={allImages[0]}
+          alt={title}
+          size="hero"
+          priority="hero"
+          className="w-full h-full object-cover"
+        />
+        <ZoomModal
+          images={allImages}
+          index={zoomIndex}
+          isOpen={isZoomOpen}
+          onClose={() => setIsZoomOpen(false)}
+          title={title}
+        />
       </div>
     );
   }
 
-  const next = () => setCurrentIndex(i => (i + 1) % allImages.length);
-  const prev = () => setCurrentIndex(i => (i - 1 + allImages.length) % allImages.length);
+  const next = () => setCurrentIndex((i) => (i + 1) % allImages.length);
+  const prev = () => setCurrentIndex((i) => (i - 1 + allImages.length) % allImages.length);
 
-  const handleTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX; };
-  const handleTouchMove = (e: React.TouchEvent) => { touchEndX.current = e.touches[0].clientX; };
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchMove = (e: React.TouchEvent) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
   const handleTouchEnd = () => {
     if (!touchStartX.current || !touchEndX.current) return;
     const diff = touchStartX.current - touchEndX.current;
-    if (Math.abs(diff) > 50) { diff > 0 ? next() : prev(); }
+    if (Math.abs(diff) > 50) {
+      diff > 0 ? next() : prev();
+    }
     touchStartX.current = null;
     touchEndX.current = null;
   };
 
-  const openZoom = (idx: number) => { setZoomIndex(idx); setIsZoomOpen(true); };
+  const openZoom = (idx: number) => {
+    setZoomIndex(idx);
+    setIsZoomOpen(true);
+  };
 
   return (
     <>
-      {/* Desktop: grid layout */}
       <div className="hidden md:block">
         {allImages.length <= 2 ? (
           <div className="grid grid-cols-2 gap-2 rounded-lg overflow-hidden">
             {allImages.map((img, i) => (
               <div key={i} className="aspect-[4/3] cursor-pointer group" onClick={() => openZoom(i)}>
-                <img src={img} alt={`${title} - ${i + 1}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+                <ExperienceImage
+                  src={img}
+                  alt={`${title} - ${i + 1}`}
+                  size={i === 0 ? 'hero' : 'card'}
+                  priority={i === 0 ? 'hero' : 'thumb'}
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
               </div>
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-4 grid-rows-2 gap-2 rounded-lg overflow-hidden" style={{ height: '480px' }}>
-            {/* Main large image */}
+          <div
+            className="grid grid-cols-4 grid-rows-2 gap-2 rounded-lg overflow-hidden"
+            style={{ height: '480px' }}
+          >
             <div className="col-span-2 row-span-2 cursor-pointer group" onClick={() => openZoom(0)}>
-              <img src={allImages[0]} alt={`${title} - 1`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+              <ExperienceImage
+                src={allImages[0]}
+                alt={`${title} - 1`}
+                size="hero"
+                priority="hero"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
             </div>
-            {/* Up to 4 smaller images */}
             {allImages.slice(1, 5).map((img, i) => (
               <div key={i} className="relative cursor-pointer group" onClick={() => openZoom(i + 1)}>
-                <img src={img} alt={`${title} - ${i + 2}`} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
-                {/* Show "+N" overlay on last visible thumbnail if more exist */}
+                <ExperienceImage
+                  src={img}
+                  alt={`${title} - ${i + 2}`}
+                  size="card"
+                  priority="thumb"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
                 {i === 3 && allImages.length > 5 && (
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                     <span className="text-white font-display text-2xl">+{allImages.length - 5}</span>
@@ -97,7 +138,6 @@ const ExperienceGallery = ({ coverImage, galleryImages, title }: ExperienceGalle
         )}
       </div>
 
-      {/* Mobile: swipeable slider */}
       <div className="md:hidden">
         <div className="relative">
           <div
@@ -107,14 +147,15 @@ const ExperienceGallery = ({ coverImage, galleryImages, title }: ExperienceGalle
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
           >
-            <img
+            <ExperienceImage
               src={allImages[currentIndex]}
               alt={`${title} - ${currentIndex + 1}`}
+              size="hero"
+              priority={currentIndex === 0 ? 'carousel-first' : 'carousel'}
               className="w-full h-full object-cover select-none"
             />
           </div>
 
-          {/* Nav arrows */}
           <Button
             variant="ghost"
             size="icon"
@@ -132,42 +173,63 @@ const ExperienceGallery = ({ coverImage, galleryImages, title }: ExperienceGalle
             <ChevronRight className="h-4 w-4" />
           </Button>
 
-          {/* Counter badge */}
           <div className="absolute bottom-3 right-3 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
             {currentIndex + 1} / {allImages.length}
           </div>
 
-          {/* Dots */}
           <div className="flex justify-center mt-3 gap-1.5">
             {allImages.map((_, i) => (
               <button
                 key={i}
                 onClick={() => setCurrentIndex(i)}
-                className={`w-2 h-2 rounded-full transition-colors ${i === currentIndex ? 'bg-foreground' : 'bg-muted-foreground/30'}`}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  i === currentIndex ? 'bg-foreground' : 'bg-muted-foreground/30'
+                }`}
               />
             ))}
           </div>
         </div>
       </div>
 
-      <ZoomModal images={allImages} index={zoomIndex} isOpen={isZoomOpen} onClose={() => setIsZoomOpen(false)} title={title} />
+      <ZoomModal
+        images={allImages}
+        index={zoomIndex}
+        isOpen={isZoomOpen}
+        onClose={() => setIsZoomOpen(false)}
+        title={title}
+      />
     </>
   );
 };
 
-/* ─── Fullscreen zoom modal (horizontal carousel) ─── */
-function ZoomModal({ images, index, isOpen, onClose, title }: { images: string[]; index: number; isOpen: boolean; onClose: () => void; title: string }) {
+function ZoomModal({
+  images,
+  index,
+  isOpen,
+  onClose,
+  title,
+}: {
+  images: string[];
+  index: number;
+  isOpen: boolean;
+  onClose: () => void;
+  title: string;
+}) {
   const [current, setCurrent] = React.useState(index);
 
-  // Sync when opening on a different image
   React.useEffect(() => {
     if (isOpen) setCurrent(index);
   }, [isOpen, index]);
 
-  const goNext = React.useCallback(() => setCurrent(i => (i + 1) % images.length), [images.length]);
-  const goPrev = React.useCallback(() => setCurrent(i => (i - 1 + images.length) % images.length), [images.length]);
+  const goNext = React.useCallback(
+    () => setCurrent((i) => (i + 1) % images.length),
+    [images.length]
+  );
+  const goPrev = React.useCallback(
+    () => setCurrent((i) => (i - 1 + images.length) % images.length),
+    [images.length]
+  );
 
-  // Keyboard nav + lock body scroll
   React.useEffect(() => {
     if (!isOpen) return;
     const onKey = (e: KeyboardEvent) => {
@@ -187,10 +249,8 @@ function ZoomModal({ images, index, isOpen, onClose, title }: { images: string[]
 
   return createPortal(
     <div className="fixed inset-0 z-[100] bg-black/95 animate-fade-in flex items-center justify-center">
-      {/* Backdrop click to close */}
       <div className="absolute inset-0" onClick={onClose} />
 
-      {/* Close button */}
       <Button
         variant="ghost"
         size="sm"
@@ -200,12 +260,10 @@ function ZoomModal({ images, index, isOpen, onClose, title }: { images: string[]
         <X className="h-7 w-7" />
       </Button>
 
-      {/* Counter */}
       <div className="absolute top-5 left-1/2 -translate-x-1/2 z-10 text-white/80 text-sm font-medium">
         {current + 1} / {images.length}
       </div>
 
-      {/* Left arrow */}
       {images.length > 1 && (
         <button
           onClick={goPrev}
@@ -215,7 +273,6 @@ function ZoomModal({ images, index, isOpen, onClose, title }: { images: string[]
         </button>
       )}
 
-      {/* Right arrow */}
       {images.length > 1 && (
         <button
           onClick={goNext}
@@ -225,17 +282,19 @@ function ZoomModal({ images, index, isOpen, onClose, title }: { images: string[]
         </button>
       )}
 
-      {/* Image */}
       <div className="relative z-[1] w-full h-full flex items-center justify-center px-16 py-16 pointer-events-none">
-        <img
-          src={images[current]}
-          alt={`${title} - ${current + 1}`}
-          className="max-w-full max-h-full object-contain pointer-events-auto select-none"
-          draggable={false}
-        />
+        <div className="pointer-events-auto max-w-full max-h-full">
+          <ExperienceImage
+            src={images[current]}
+            alt={`${title} - ${current + 1}`}
+            size="hero"
+            priority="hero"
+            className="max-w-full max-h-[calc(100vh-8rem)] object-contain select-none"
+            imgProps={{ draggable: false }}
+          />
+        </div>
       </div>
 
-      {/* Thumbnail strip */}
       {images.length > 1 && (
         <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex gap-2 max-w-[80vw] overflow-x-auto py-1 px-2">
           {images.map((img, i) => (
@@ -246,7 +305,13 @@ function ZoomModal({ images, index, isOpen, onClose, title }: { images: string[]
                 i === current ? 'border-white scale-110' : 'border-transparent opacity-50 hover:opacity-80'
               }`}
             >
-              <img src={img} alt="" className="w-full h-full object-cover" />
+              <ExperienceImage
+                src={img}
+                alt=""
+                size="thumb"
+                priority="thumb"
+                className="w-full h-full object-cover"
+              />
             </button>
           ))}
         </div>

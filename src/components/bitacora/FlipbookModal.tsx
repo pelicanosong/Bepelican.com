@@ -9,6 +9,7 @@ import { Flipbook, useIncrementViewCount } from '@/hooks/useFlipbooks';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { ExperienceImage } from '@/components/experience/ExperienceImage';
 
 interface FlipbookModalProps {
   flipbook: (Flipbook & { related_experiences?: any[] }) | null;
@@ -181,7 +182,13 @@ const FlipbookModal = ({ flipbook, isOpen, onClose }: FlipbookModalProps) => {
                       className="flex items-center gap-2.5 p-1.5 rounded-lg hover:bg-white/5 transition-colors"
                     >
                       {exp.cover_image && (
-                        <img src={exp.cover_image} alt={exp.title} className="w-9 h-9 rounded-md object-cover" />
+                        <ExperienceImage
+                          src={exp.cover_image}
+                          alt={exp.title}
+                          size="thumb"
+                          priority="list"
+                          className="w-9 h-9 rounded-md object-cover"
+                        />
                       )}
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-medium text-white/70 line-clamp-1 font-serif">{exp.title}</p>

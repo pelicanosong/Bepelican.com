@@ -1,6 +1,15 @@
 import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import {
+  IMAGE_CACHE_CONTROL,
+  IMAGE_CANONICAL_WIDTH,
+  processImageForUpload,
+  storagePathsForImageBase,
+  type EncodedVariant,
+} from '@/lib/imagePipeline';
+import { purgeExperienceMediaAtUrl } from '@/lib/experienceStorage';
+import { withCacheBust } from '@/lib/mediaUrl';
 
 export interface GalleryImage {
   url: string;
@@ -17,32 +26,55 @@ export const useExperienceImages = (slug: string) => {
     return data.publicUrl;
   };
 
-  const uploadCoverImage = async (file: File): Promise<string | null> => {
+  const removePaths = async (paths: string[]) => {
+    if (paths.length === 0) return;
+    await supabase.storage.from('experiences').remove(paths);
+  };
+
+  const uploadBlob = async (path: string, blob: Blob, contentType: string) => {
+    const { error } = await supabase.storage.from('experiences').upload(path, blob, {
+      cacheControl: IMAGE_CACHE_CONTROL,
+      upsert: true,
+      contentType,
+    });
+    if (error) throw error;
+  };
+
+  const uploadVariants = async (basePath: string, variants: EncodedVariant[]) => {
+    const tasks: Promise<void>[] = [];
+    for (const variant of variants) {
+      const suffix = variant.labelWidth;
+      if (variant.webp.type === 'image/webp') {
+        tasks.push(uploadBlob(`${basePath}-${suffix}.webp`, variant.webp, 'image/webp'));
+      }
+      tasks.push(uploadBlob(`${basePath}-${suffix}.jpg`, variant.jpeg, 'image/jpeg'));
+    }
+    await Promise.all(tasks);
+  };
+
+  const uploadCoverImage = async (
+    file: File,
+    previousUrl?: string | null
+  ): Promise<string | null> => {
     if (!slug) return null;
     setIsUploading(true);
 
     try {
-      const filePath = `${slug}/${slug}-cover.jpg`;
-      
-      // Delete existing cover if present
-      await supabase.storage.from('experiences').remove([filePath]);
+      if (previousUrl) await purgeExperienceMediaAtUrl(previousUrl);
 
-      // Upload new cover
-      const { error } = await supabase.storage
-        .from('experiences')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true,
-          contentType: 'image/jpeg',
-        });
+      const basePath = `${slug}/${slug}-cover`;
+      await removePaths(storagePathsForImageBase(basePath));
 
-      if (error) throw error;
+      const variants = await processImageForUpload(file);
+      await uploadVariants(basePath, variants);
 
-      return getPublicUrl(filePath);
-    } catch (error: any) {
+      const canonicalPath = `${basePath}-${IMAGE_CANONICAL_WIDTH}.webp`;
+      return withCacheBust(getPublicUrl(canonicalPath));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al subir imagen',
-        description: error.message,
+        description: message,
         variant: 'destructive',
       });
       return null;
@@ -51,32 +83,30 @@ export const useExperienceImages = (slug: string) => {
     }
   };
 
-  const uploadGalleryImage = async (file: File, index: number): Promise<string | null> => {
+  const uploadGalleryImage = async (
+    file: File,
+    index: number,
+    previousUrl?: string | null
+  ): Promise<string | null> => {
     if (!slug) return null;
     setIsUploading(true);
 
     try {
-      const filePath = `${slug}/gallery/${slug}-${index}.jpg`;
+      if (previousUrl) await purgeExperienceMediaAtUrl(previousUrl);
 
-      // Delete existing file at this index if present
-      await supabase.storage.from('experiences').remove([filePath]);
+      const basePath = `${slug}/gallery/${slug}-${index}`;
+      await removePaths(storagePathsForImageBase(basePath));
 
-      // Upload new image
-      const { error } = await supabase.storage
-        .from('experiences')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: true,
-          contentType: 'image/jpeg',
-        });
+      const variants = await processImageForUpload(file);
+      await uploadVariants(basePath, variants);
 
-      if (error) throw error;
-
-      return getPublicUrl(filePath);
-    } catch (error: any) {
+      const canonicalPath = `${basePath}-${IMAGE_CANONICAL_WIDTH}.webp`;
+      return withCacheBust(getPublicUrl(canonicalPath));
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al subir imagen de galería',
-        description: error.message,
+        description: message,
         variant: 'destructive',
       });
       return null;
@@ -89,32 +119,39 @@ export const useExperienceImages = (slug: string) => {
     if (!slug) return false;
 
     try {
-      const filePath = `${slug}/gallery/${slug}-${index}.jpg`;
-      const { error } = await supabase.storage.from('experiences').remove([filePath]);
+      const basePath = `${slug}/gallery/${slug}-${index}`;
+      const { error } = await supabase.storage
+        .from('experiences')
+        .remove(storagePathsForImageBase(basePath));
       if (error) throw error;
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al eliminar imagen',
-        description: error.message,
+        description: message,
         variant: 'destructive',
       });
       return false;
     }
   };
 
-  const deleteCoverImage = async (): Promise<boolean> => {
+  const deleteCoverImage = async (currentCoverUrl?: string | null): Promise<boolean> => {
     if (!slug) return false;
 
     try {
-      const filePath = `${slug}/${slug}-cover.jpg`;
-      const { error } = await supabase.storage.from('experiences').remove([filePath]);
+      const basePath = `${slug}/${slug}-cover`;
+      const { error } = await supabase.storage
+        .from('experiences')
+        .remove(storagePathsForImageBase(basePath));
       if (error) throw error;
+      if (currentCoverUrl) await purgeExperienceMediaAtUrl(currentCoverUrl);
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error desconocido';
       toast({
         title: 'Error al eliminar portada',
-        description: error.message,
+        description: message,
         variant: 'destructive',
       });
       return false;

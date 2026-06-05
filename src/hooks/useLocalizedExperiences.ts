@@ -78,7 +78,8 @@ export function useLocalizedExperiences(filters?: ExperienceFilters) {
   return {
     ...query,
     data,
-    isLoading: query.isLoading || (language !== SOURCE_LOCALE && (expTrLoading || catTrLoading)),
+    // No bloquear la ficha si i18n tarda o falla (evita pantalla en blanco / skeleton infinito)
+    isLoading: query.isLoading,
   };
 }
 
@@ -113,7 +114,7 @@ export function useLocalizedExperience(slug: string) {
   return {
     ...query,
     data,
-    isLoading: query.isLoading || (language !== SOURCE_LOCALE && (expTrLoading || catTrLoading)),
+    isLoading: query.isLoading,
   };
 }
 

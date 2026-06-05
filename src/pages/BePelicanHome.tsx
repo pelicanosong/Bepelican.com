@@ -5,12 +5,14 @@ import BePelicanHeader from '@/components/bepelican/BePelicanHeader';
 import BePelicanFooter from '@/components/bepelican/BePelicanFooter';
 import HeroCarousel from '@/components/bepelican/HeroCarousel';
 import SearchBar from '@/components/bepelican/SearchBar';
+import { MobileSearchTrigger } from '@/components/bepelican/MobileSearchSheet';
 import FeaturedExperiences from '@/components/bepelican/FeaturedExperiences';
 import FeaturedLibrary from '@/components/bepelican/FeaturedLibrary';
 import HowItWorks from '@/components/bepelican/HowItWorks';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useLocalizedExperiences } from '@/hooks/useLocalizedExperiences';
+import { ExperienceImage } from '@/components/experience/ExperienceImage';
 
 const HOME_SEO = {
   title: 'BePelican | Experiencias de turismo auténtico en Colombia',
@@ -112,20 +114,26 @@ const BePelicanHome = () => {
         <HeroCarousel />
         
         {/* Floating Search Bar */}
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-20 w-full max-w-4xl px-6 hidden md:block">
+        {/* Floating Search Bar — desktop only */}
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 z-20 w-full max-w-4xl px-4 sm:px-6 hidden md:block">
           <SearchBar />
         </div>
       </div>
 
-      {/* Spacer for search bar */}
-      <div className="pt-10 md:pt-20" />
+      {/* Mobile search — below hero */}
+      <section className="md:hidden px-4 sm:px-6 -mt-2 mb-2 relative z-20">
+        <MobileSearchTrigger />
+      </section>
+
+      {/* Spacer for desktop floating search bar */}
+      <div className="pt-6 md:pt-20" />
 
       {/* Featured Experiences */}
       <FeaturedExperiences />
 
       {/* Upcoming Experiences Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="container mx-auto px-6 max-w-3xl">
+      <section className="py-12 md:py-20 bg-muted/30">
+        <div className="container mx-auto px-4 sm:px-6 max-w-3xl">
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2 mb-6">
               <Calendar className="h-4 w-4 text-bepelican-orange" />
@@ -147,25 +155,39 @@ const BePelicanHome = () => {
               <Link
                 key={exp.id}
                 to={`/experiencias/${exp.slug}`}
-                className="flex items-center gap-4 bg-background rounded-xl p-4 border border-border hover:border-bepelican-orange/50 hover:shadow-md transition-all group"
+                className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 bg-background rounded-xl p-4 border border-border hover:border-bepelican-orange/50 hover:shadow-md transition-all group"
               >
-                <img
-                  src={exp.cover_image || 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=100&h=100&fit=crop'}
-                  alt={exp.title}
-                  className="w-14 h-14 rounded-lg object-cover"
-                />
-                <div className="flex-1">
-                  <h4 className="font-medium text-foreground group-hover:text-bepelican-orange transition-colors">
+                {exp.cover_image ? (
+                  <ExperienceImage
+                    src={exp.cover_image}
+                    alt={exp.title}
+                    size="thumb"
+                    priority="list"
+                    className="w-14 h-14 rounded-lg object-cover"
+                  />
+                ) : (
+                  <img
+                    src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=100&h=100&fit=crop"
+                    alt={exp.title}
+                    className="w-14 h-14 rounded-lg object-cover"
+                    width={56}
+                    height={56}
+                    loading="lazy"
+                    decoding="async"
+                  />
+                )}
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-foreground group-hover:text-bepelican-orange transition-colors line-clamp-2">
                     {exp.title}
                   </h4>
-                  <p className="text-sm text-muted-foreground flex items-center gap-2">
-                    <MapPin className="h-3 w-3" />
-                    {exp.location_city} • Próximamente
+                  <p className="text-sm text-muted-foreground flex items-center gap-2 mt-1">
+                    <MapPin className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{exp.location_city} • Próximamente</span>
                   </p>
                 </div>
-                <div className="text-right">
+                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 sm:text-right shrink-0">
                   <p className="text-sm font-medium text-bepelican-orange">{3 - index} cupos</p>
-                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-bepelican-orange transition-colors ml-auto" />
+                  <ArrowRight className="h-4 w-4 text-muted-foreground group-hover:text-bepelican-orange transition-colors" />
                 </div>
               </Link>
             ))}

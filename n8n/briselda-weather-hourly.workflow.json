@@ -1,0 +1,122 @@
+{
+  "name": "Briselda",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "schedule-hourly",
+      "name": "Cada 1 hora",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual (probar ahora)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 200]
+    },
+    {
+      "parameters": {
+        "jsCode": "const destinations = [\n  { ciudad: 'El Cocuy', query: 'El Cocuy,CO' },\n  { ciudad: 'Santa Marta', query: 'Santa Marta,CO' },\n  { ciudad: 'Leticia', query: 'Leticia,CO' },\n  { ciudad: 'Riohacha', query: 'Riohacha,CO' },\n  { ciudad: 'Bogota', query: 'Bogota,CO' },\n];\n\nreturn destinations.map((d) => ({ json: d }));"
+      },
+      "id": "destinos-bepelican",
+      "name": "Destinos Bepelican",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [260, 100]
+    },
+    {
+      "parameters": {
+        "batchSize": 1,
+        "options": {}
+      },
+      "id": "split-por-ciudad",
+      "name": "Por ciudad",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [520, 100]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.openweathermap.org/data/2.5/weather",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "q", "value": "={{ $json.query }}" },
+            { "name": "appid", "value": "={{ $env.OPENWEATHER_API_KEY }}" },
+            { "name": "units", "value": "metric" },
+            { "name": "lang", "value": "es" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "openweather-api",
+      "name": "OpenWeatherMap",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [780, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const dest = $('Por ciudad').item.json;\nconst owm = $input.first().json;\n\nif (!owm?.main) {\n  throw new Error(\n    `OpenWeatherMap sin datos para ${dest.ciudad}: ${JSON.stringify(owm).slice(0, 240)}`,\n  );\n}\n\nconst fetchedAt = new Date().toISOString();\nconst hour = new Date();\nhour.setUTCMinutes(0, 0, 0);\nconst snapshotHour = hour.toISOString();\n\nconst windMs = Number(owm.wind?.speed ?? 0);\n\nreturn [\n  {\n    json: {\n      ciudad: dest.ciudad,\n      temperatura: Number(owm.main.temp),\n      sensacion_termica: Number(owm.main.feels_like),\n      humedad: Number(owm.main.humidity),\n      descripcion: owm.weather?.[0]?.description ?? '',\n      viento_kmh: Math.round(windMs * 3.6 * 10) / 10,\n      presion: owm.main.pressure ?? null,\n      visibilidad_m: owm.visibility ?? null,\n      icono: owm.weather?.[0]?.icon ?? null,\n      condicion_id: owm.weather?.[0]?.id ?? null,\n      lat: owm.coord?.lat ?? null,\n      lon: owm.coord?.lon ?? null,\n      nubes_pct: owm.clouds?.all ?? null,\n      fetched_at: fetchedAt,\n      snapshot_hour: snapshotHour,\n    },\n  },\n];"
+      },
+      "id": "transformar-clima",
+      "name": "Transformar clima",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1040, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const baseUrl = ($env.SUPABASE_URL || '').replace(/\\/$/, '');\nconst serviceKey = $env.SUPABASE_SERVICE_ROLE_KEY || '';\n\nif (!baseUrl || !serviceKey) {\n  throw new Error(\n    'Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en n8n ($env; npm run n8n:briselda)',\n  );\n}\n\nconst upsertUrl = `${baseUrl}/rest/v1/destination_weather?on_conflict=ciudad,snapshot_hour`;\nconst headers = {\n  apikey: serviceKey,\n  Authorization: `Bearer ${serviceKey}`,\n  'Content-Type': 'application/json',\n  'Content-Profile': 'briselda',\n  Prefer: 'resolution=merge-duplicates,return=representation',\n};\n\nconst saved = [];\n\nfor (const item of $input.all()) {\n  const j = item.json;\n  const row = {\n    ciudad: j.ciudad,\n    temperatura: j.temperatura,\n    sensacion_termica: j.sensacion_termica,\n    humedad: j.humedad,\n    descripcion: j.descripcion,\n    viento_kmh: j.viento_kmh,\n    presion: j.presion,\n    visibilidad_m: j.visibilidad_m,\n    icono: j.icono,\n    condicion_id: j.condicion_id,\n    lat: j.lat,\n    lon: j.lon,\n    nubes_pct: j.nubes_pct,\n    fetched_at: j.fetched_at,\n    snapshot_hour: j.snapshot_hour,\n  };\n\n  const res = await this.helpers.httpRequest({\n    method: 'POST',\n    url: upsertUrl,\n    headers,\n    body: row,\n    json: true,\n  });\n\n  saved.push({ json: { ...row, supabase: res } });\n}\n\nreturn saved;"
+      },
+      "id": "supabase-save",
+      "name": "Guardar en Supabase",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1300, 100]
+    }
+  ],
+  "connections": {
+    "Cada 1 hora": {
+      "main": [[{ "node": "Destinos Bepelican", "type": "main", "index": 0 }]]
+    },
+    "Manual (probar ahora)": {
+      "main": [[{ "node": "Destinos Bepelican", "type": "main", "index": 0 }]]
+    },
+    "Destinos Bepelican": {
+      "main": [[{ "node": "Por ciudad", "type": "main", "index": 0 }]]
+    },
+    "Por ciudad": {
+      "main": [
+        [{ "node": "OpenWeatherMap", "type": "main", "index": 0 }],
+        []
+      ]
+    },
+    "OpenWeatherMap": {
+      "main": [[{ "node": "Transformar clima", "type": "main", "index": 0 }]]
+    },
+    "Transformar clima": {
+      "main": [[{ "node": "Guardar en Supabase", "type": "main", "index": 0 }]]
+    },
+    "Guardar en Supabase": {
+      "main": [[{ "node": "Por ciudad", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota"
+  }
+}

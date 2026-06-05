@@ -143,10 +143,14 @@ Deno.serve(async (req: Request) => {
     meta.url = `${BASE_URL}/experiencias`;
   }
 
-  // /libreria/:slug
+  // /libreria/:slug (incluye alias → slug canónico en Supabase)
+  const FLIPBOOK_SLUG_ALIASES: Record<string, string> = {
+    "huellas-boyaca-territorio-de-cocteles-sagrados": "boyaca-tierra-de-cocteles-sagrados",
+  };
   const libMatch = path.match(/^\/libreria\/([^/]+)\/?$/);
   if (libMatch) {
-    const slug = libMatch[1];
+    const urlSlug = libMatch[1];
+    const slug = FLIPBOOK_SLUG_ALIASES[urlSlug] ?? urlSlug;
     const { data } = await supabase
       .from("flipbooks")
       .select("title, description, cover_image, slug")
@@ -159,7 +163,7 @@ Deno.serve(async (req: Request) => {
       meta.description =
         data.description?.substring(0, 160) ||
         `Lee ${data.title} en BePelican. Guías de viaje, rutas y experiencias auténticas en Colombia.`;
-      meta.url = `${BASE_URL}/libreria/${data.slug}`;
+      meta.url = `${BASE_URL}/libreria/${urlSlug}`;
       meta.image = data.cover_image || OG_IMAGE;
       meta.type = "article";
       meta.jsonLd = {

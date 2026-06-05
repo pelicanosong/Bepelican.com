@@ -6,12 +6,16 @@ import { es, enUS } from 'date-fns/locale';
 import BePelicanHeader from '@/components/bepelican/BePelicanHeader';
 import BePelicanFooter from '@/components/bepelican/BePelicanFooter';
 import ExperienceCard from '@/components/bepelican/ExperienceCard';
+import { MobileSearchTrigger } from '@/components/bepelican/MobileSearchSheet';
+import { DisplayCurrencyCompactSelector } from '@/components/experience/DisplayCurrencyCompactSelector';
 import { useLocalizedExperiences, useLocalizedCategories } from '@/hooks/useLocalizedExperiences';
 import { useLanguage } from '@/contexts/LanguageContext';
 import type { ExperienceFilters } from '@/hooks/useExperiences';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { PAGE_TOP, STICKY_BELOW_HEADER, PAGE_X } from '@/lib/layout';
+import { cn } from '@/lib/utils';
 
 const Experiencias = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -152,21 +156,32 @@ const Experiencias = () => {
       <BePelicanHeader variant="light" />
 
       {/* Hero */}
-      <section className="bg-gradient-to-r from-primary to-bepelican-deepblue text-primary-foreground pt-24 md:pt-28 pb-6 md:pb-8">
-        <div className="container mx-auto px-4">
-          <h1 className="font-display text-3xl md:text-5xl mb-2">
+      <section className={cn('bg-gradient-to-r from-primary to-bepelican-deepblue text-primary-foreground pb-6 md:pb-8', PAGE_TOP)}>
+        <div className={cn('container mx-auto', PAGE_X)}>
+          <h1 className="font-display text-2xl sm:text-3xl md:text-5xl mb-2 break-words">
             {pageTitle}
           </h1>
-          <p className="text-lg opacity-90">
+          <p className="text-base sm:text-lg opacity-90">
             {pageDescription}
           </p>
+
+          {/* Mobile search bar */}
+          <div className="mt-4 md:hidden">
+            <MobileSearchTrigger
+              initialValues={{
+                destination: city,
+                date: dateParam,
+                guests: participantsParam,
+              }}
+            />
+          </div>
         </div>
       </section>
 
       {/* Active Filters Bar */}
       {hasActiveFilters && (
         <section className="bg-muted/30 border-b border-border">
-          <div className="container mx-auto px-4 py-3">
+          <div className="container mx-auto px-4 sm:px-6 py-3">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm text-muted-foreground mr-2">{t('list.activeFilters')}</span>
               
@@ -174,11 +189,13 @@ const Experiencias = () => {
                 <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
                   <MapPin className="h-3.5 w-3.5" />
                   {city}
-                  <button 
+                  <button
+                    type="button"
                     onClick={() => removeFilter('ciudad')}
-                    className="ml-1 hover:bg-muted rounded-full p-0.5"
+                    className="ml-1 hover:bg-muted rounded-full min-h-8 min-w-8 p-1.5 flex items-center justify-center"
+                    aria-label="Quitar filtro de ciudad"
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-3.5 w-3.5" />
                   </button>
                 </Badge>
               )}
@@ -187,11 +204,13 @@ const Experiencias = () => {
                 <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
                   <Calendar className="h-3.5 w-3.5" />
                   {formattedDate}
-                  <button 
+                  <button
+                    type="button"
                     onClick={() => removeFilter('fecha')}
-                    className="ml-1 hover:bg-muted rounded-full p-0.5"
+                    className="ml-1 hover:bg-muted rounded-full min-h-8 min-w-8 p-1.5 flex items-center justify-center"
+                    aria-label="Quitar filtro de fecha"
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-3.5 w-3.5" />
                   </button>
                 </Badge>
               )}
@@ -200,11 +219,13 @@ const Experiencias = () => {
                 <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
                   <Users className="h-3.5 w-3.5" />
                   {participantsParam} {t('common.people')}
-                  <button 
+                  <button
+                    type="button"
                     onClick={() => removeFilter('participantes')}
-                    className="ml-1 hover:bg-muted rounded-full p-0.5"
+                    className="ml-1 hover:bg-muted rounded-full min-h-8 min-w-8 p-1.5 flex items-center justify-center"
+                    aria-label="Quitar filtro de participantes"
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-3.5 w-3.5" />
                   </button>
                 </Badge>
               )}
@@ -213,11 +234,13 @@ const Experiencias = () => {
                 <Badge variant="secondary" className="gap-1.5 py-1.5 px-3">
                   <Search className="h-3.5 w-3.5" />
                   "{searchQuery}"
-                  <button 
+                  <button
+                    type="button"
                     onClick={() => removeFilter('q')}
-                    className="ml-1 hover:bg-muted rounded-full p-0.5"
+                    className="ml-1 hover:bg-muted rounded-full min-h-8 min-w-8 p-1.5 flex items-center justify-center"
+                    aria-label="Quitar filtro de búsqueda"
                   >
-                    <X className="h-3 w-3" />
+                    <X className="h-3.5 w-3.5" />
                   </button>
                 </Badge>
               )}
@@ -236,10 +259,11 @@ const Experiencias = () => {
       )}
 
       {/* Category Filters */}
-      <section className="border-b border-border sticky top-[73px] bg-background z-40">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center gap-4 overflow-x-auto pb-2 scrollbar-hide">
-            <div className="flex items-center gap-2 text-muted-foreground shrink-0">
+      <section className={cn('border-b border-border bg-background shadow-sm', STICKY_BELOW_HEADER)}>
+        <div className={cn('container mx-auto py-4', PAGE_X)}>
+          <div className="relative">
+            <div className="flex items-center gap-4 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory scroll-fade-right">
+            <div className="flex items-center gap-2 text-muted-foreground shrink-0 snap-start">
               <Filter className="h-4 w-4" />
               <span className="text-sm font-medium">Categorías:</span>
             </div>
@@ -248,7 +272,7 @@ const Experiencias = () => {
               variant={!categorySlug ? 'default' : 'outline'}
               size="sm"
               onClick={() => handleCategoryChange()}
-              className={!categorySlug ? 'bg-primary text-primary-foreground shrink-0' : 'shrink-0'}
+              className={cn('shrink-0 snap-start', !categorySlug && 'bg-primary text-primary-foreground')}
             >
               Todas
             </Button>
@@ -259,20 +283,21 @@ const Experiencias = () => {
                 variant={categorySlug === category.slug ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleCategoryChange(category.slug)}
-                className={`shrink-0 ${categorySlug === category.slug ? 'bg-primary text-primary-foreground' : ''}`}
+                className={cn('shrink-0 snap-start', categorySlug === category.slug && 'bg-primary text-primary-foreground')}
               >
                 {category.name}
               </Button>
             ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* Experience Grid */}
       <section className="py-8 md:py-12">
-        <div className="container mx-auto px-4">
+        <div className={cn('container mx-auto', PAGE_X)}>
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => (
                 <div key={i} className="space-y-4">
                   <Skeleton className="aspect-[4/3] rounded-lg" />
@@ -283,10 +308,13 @@ const Experiencias = () => {
             </div>
           ) : experiences && experiences.length > 0 ? (
             <>
-              <p className="text-muted-foreground mb-6">
-                {experiences.length} experiencia{experiences.length !== 1 ? 's' : ''} encontrada{experiences.length !== 1 ? 's' : ''}
-              </p>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <p className="text-muted-foreground">
+                  {experiences.length} experiencia{experiences.length !== 1 ? 's' : ''} encontrada{experiences.length !== 1 ? 's' : ''}
+                </p>
+                <DisplayCurrencyCompactSelector className="w-full sm:w-auto" />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {experiences.map((experience) => (
                   <ExperienceCard key={experience.id} experience={experience} />
                 ))}

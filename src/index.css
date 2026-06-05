@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -83,6 +85,9 @@
     --nav-background: 0 0% 100%;
     --nav-foreground: 213 45% 20%;
     --nav-hover: 178 89% 32%;
+
+    /* Layout — updated at runtime by BePelicanHeader ResizeObserver */
+    --header-height: 4.5rem;
   }
 
   .dark {
@@ -149,5 +154,820 @@
   }
 }
 
-/* Import Google Fonts */
-@import url('https://fonts.googleapis.com/css2?family=Architects+Daughter&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap');
+/* Briselda — escena climática (luxury minimal, manual BePelican) */
+@keyframes climateBreath {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.97;
+  }
+}
+
+@keyframes climateDrift {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0.15;
+  }
+  100% {
+    transform: translate(12px, -6px);
+    opacity: 0.08;
+  }
+}
+
+@keyframes climateMist {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.climate-scene__sky {
+  animation: climateBreath 14s ease-in-out infinite;
+}
+
+/* Gradientes suaves — fondo claro, sensación por velo de color */
+.climate-scene--frio .climate-scene__sky {
+  background: linear-gradient(
+    168deg,
+    hsl(var(--bepelican-beige) / 0.95) 0%,
+    hsl(var(--bepelican-turquoise) / 0.22) 55%,
+    hsl(var(--bepelican-deepblue) / 0.08) 100%
+  );
+  animation-duration: 16s;
+}
+
+.climate-scene--fresco .climate-scene__sky {
+  background: linear-gradient(
+    168deg,
+    hsl(0 0% 100%) 0%,
+    hsl(var(--bepelican-turquoise) / 0.18) 50%,
+    hsl(var(--bepelican-beige) / 0.5) 100%
+  );
+}
+
+.climate-scene--templado .climate-scene__sky {
+  background: linear-gradient(
+    168deg,
+    hsl(0 0% 100%) 0%,
+    hsl(var(--bepelican-beige) / 0.65) 45%,
+    hsl(var(--bepelican-turquoise) / 0.12) 100%
+  );
+}
+
+.climate-scene--calido .climate-scene__sky {
+  background: linear-gradient(
+    168deg,
+    hsl(var(--bepelican-beige) / 0.9) 0%,
+    hsl(var(--bepelican-orange) / 0.2) 48%,
+    hsl(var(--bepelican-brown) / 0.12) 100%
+  );
+  animation-duration: 11s;
+}
+
+.climate-scene--caluroso .climate-scene__sky {
+  background: linear-gradient(
+    168deg,
+    hsl(var(--bepelican-beige)) 0%,
+    hsl(var(--bepelican-orange) / 0.28) 50%,
+    hsl(var(--bepelican-brown) / 0.15) 100%
+  );
+  animation-duration: 9s;
+}
+
+.climate-scene__veil {
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    hsl(var(--bepelican-deepblue) / 0.03) 100%
+  );
+}
+
+.climate-scene__mist {
+  background: radial-gradient(
+    ellipse 80% 60% at 50% 100%,
+    hsl(var(--bepelican-turquoise) / 0.12),
+    transparent 72%
+  );
+  animation: climateMist 16s ease-in-out infinite;
+}
+
+.climate-scene__particle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: hsl(var(--bepelican-deepblue) / 0.12);
+  animation: climateDrift linear infinite;
+}
+
+.climate-scene--preset-desierto_guajira .climate-scene__particle {
+  background: hsl(var(--bepelican-brown) / 0.2);
+}
+
+.climate-scene--preset-nevado_alto .climate-scene__particle {
+  background: hsl(var(--bepelican-turquoise) / 0.25);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .climate-scene__sky,
+  .climate-scene__mist,
+  .climate-scene__particle {
+    animation: none !important;
+  }
+}
+
+/* Briselda — ilustración climática protagonista (tech / luxury) */
+@keyframes weatherRingSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes weatherOrbitPulse {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.04);
+  }
+}
+
+@keyframes weatherScan {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateY(200%);
+    opacity: 0;
+  }
+}
+
+@keyframes weatherCloudFloatA {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(3px);
+  }
+}
+
+@keyframes weatherCloudFloatB {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-4px);
+  }
+}
+
+@keyframes weatherSunPulse {
+  0%,
+  100% {
+    opacity: 0.85;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes weatherRainFall {
+  0% {
+    transform: translateY(0);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateY(10px);
+    opacity: 0;
+  }
+}
+
+@keyframes weatherBoltFlash {
+  0%,
+  88%,
+  100% {
+    opacity: 0.15;
+  }
+  90%,
+  94% {
+    opacity: 1;
+  }
+}
+
+@keyframes weatherFlakeDrift {
+  0% {
+    transform: translateY(0);
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(8px);
+    opacity: 0.2;
+  }
+}
+
+@keyframes weatherMistWave {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.65;
+  }
+}
+
+/* Briselda — ilustraciones 3D prehechas por territorio (Icons8 3D Fluency) */
+.climate-illustration-hero {
+  width: 100%;
+}
+
+.climate-illustration-hero__stage {
+  position: relative;
+  width: 100%;
+  min-height: min(52vw, 400px);
+  max-height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.climate-illustration-hero__backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+.climate-illustration-hero__backdrop--desierto_guajira {
+  background: linear-gradient(
+    160deg,
+    hsl(var(--bepelican-orange) / 0.35) 0%,
+    hsl(var(--bepelican-beige)) 50%,
+    hsl(var(--bepelican-turquoise) / 0.25) 100%
+  );
+}
+
+.climate-illustration-hero__backdrop--sierra_costa {
+  background: linear-gradient(
+    160deg,
+    hsl(var(--bepelican-turquoise) / 0.3) 0%,
+    hsl(var(--bepelican-green) / 0.35) 55%,
+    hsl(var(--bepelican-beige) / 0.6) 100%
+  );
+}
+
+.climate-illustration-hero__backdrop--andes_urbana {
+  background: linear-gradient(
+    160deg,
+    hsl(0 0% 100% / 0.85) 0%,
+    hsl(var(--bepelican-gray) / 0.3) 50%,
+    hsl(var(--bepelican-deepblue) / 0.2) 100%
+  );
+}
+
+.climate-illustration-hero__backdrop--barrio_urbana {
+  background: linear-gradient(
+    145deg,
+    hsl(var(--bepelican-orange) / 0.25) 0%,
+    hsl(var(--bepelican-beige)) 45%,
+    hsl(var(--bepelican-turquoise) / 0.2) 100%
+  );
+}
+
+.climate-illustration-hero__backdrop--nevado_alto {
+  background: linear-gradient(
+    180deg,
+    hsl(var(--bepelican-turquoise) / 0.35) 0%,
+    hsl(0 0% 100% / 0.9) 55%,
+    hsl(var(--bepelican-beige) / 0.5) 100%
+  );
+}
+
+.climate-illustration-hero__backdrop--amazonia {
+  background: linear-gradient(
+    160deg,
+    hsl(var(--bepelican-green) / 0.4) 0%,
+    hsl(var(--bepelican-turquoise) / 0.3) 100%
+  );
+}
+
+.climate-illustration-hero__art {
+  position: relative;
+  z-index: 1;
+  width: min(72vw, 320px);
+  height: auto;
+  object-fit: contain;
+  filter: drop-shadow(0 24px 48px hsl(var(--bepelican-deepblue) / 0.22));
+  animation: climateIllustrationFloat 6s ease-in-out infinite;
+}
+
+.climate-illustration-hero__weather-badge {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.25rem;
+  z-index: 2;
+  width: clamp(3.5rem, 14vw, 5.5rem);
+  height: auto;
+  filter: drop-shadow(0 8px 20px hsl(var(--bepelican-deepblue) / 0.2));
+}
+
+.climate-illustration-hero__vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    transparent 50%,
+    hsl(var(--bepelican-deepblue) / 0.55) 100%
+  );
+}
+
+.climate-illustration-hero__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 1.25rem 1.5rem 1.5rem;
+  pointer-events: none;
+}
+
+.climate-illustration-hero__destino {
+  text-shadow: 0 1px 10px hsl(var(--bepelican-deepblue) / 0.75);
+}
+
+.climate-illustration-hero__bottom {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.climate-illustration-hero__temp {
+  font-size: clamp(3rem, 11vw, 5rem);
+  line-height: 0.95;
+  color: hsl(0 0% 100%);
+  text-shadow: 0 4px 24px hsl(var(--bepelican-deepblue) / 0.6);
+}
+
+.climate-illustration-hero__temp-unit {
+  font-size: 0.45em;
+  opacity: 0.88;
+}
+
+.climate-illustration-hero__condition {
+  font-size: clamp(1.1rem, 3.5vw, 1.6rem);
+  line-height: 1.2;
+  text-align: right;
+  text-shadow: 0 2px 14px hsl(var(--bepelican-deepblue) / 0.65);
+  max-width: 12rem;
+}
+
+.climate-illustration-hero__credit {
+  padding: 0.5rem 1.5rem 0;
+  font-size: 10px;
+  text-align: right;
+}
+
+@keyframes climateIllustrationFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .climate-illustration-hero__art {
+    animation: none;
+  }
+}
+
+.climate-scene-data {
+  background: hsl(0 0% 100% / 0.98);
+}
+
+/* legacy SVG territory styles — unused */
+@keyframes territorySunPulse {
+  0%,
+  100% {
+    opacity: 0.92;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+}
+
+@keyframes territoryDuneShift {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(2px);
+  }
+}
+
+@keyframes territoryRiverFlow {
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes territoryPalmSway {
+  0%,
+  100% {
+    transform: rotate(0deg);
+  }
+  50% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes territoryGlacierShine {
+  0%,
+  100% {
+    opacity: 0.88;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+.territory-climate-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 13.5rem;
+}
+
+.territory-climate-hero__caption {
+  font-size: 0.8125rem;
+  line-height: 1.35;
+  color: hsl(var(--bepelican-deepblue) / 0.78);
+  letter-spacing: 0.02em;
+}
+
+.territory-climate-hero__frame {
+  width: 100%;
+  aspect-ratio: 200 / 140;
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 2px solid hsl(var(--bepelican-deepblue) / 0.12);
+  box-shadow: 0 10px 28px hsl(var(--bepelican-deepblue) / 0.1);
+  background: hsl(0 0% 100%);
+}
+
+.territory-climate-hero__svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* —— Guajira —— */
+.territory-guajira__sun {
+  fill: hsl(var(--bepelican-orange));
+  animation: territorySunPulse 4s ease-in-out infinite;
+  transform-origin: 162px 32px;
+}
+
+.territory-guajira__dune {
+  fill: hsl(var(--bepelican-brown) / 0.55);
+  animation: territoryDuneShift 8s ease-in-out infinite;
+}
+
+.territory-guajira__dune--far {
+  fill: hsl(var(--bepelican-beige) / 0.9);
+  animation-delay: 0.5s;
+}
+
+.territory-guajira__sea {
+  fill: hsl(var(--bepelican-turquoise) / 0.45);
+}
+
+.territory-guajira__hammock {
+  stroke: hsl(var(--bepelican-brown));
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.territory-guajira__hammock-post {
+  stroke: hsl(var(--bepelican-brown) / 0.7);
+  stroke-width: 2;
+}
+
+.territory-guajira__wayuu rect {
+  fill: hsl(var(--bepelican-orange) / 0.35);
+  stroke: hsl(var(--bepelican-deepblue) / 0.4);
+  stroke-width: 1;
+}
+
+.territory-guajira__wayuu line {
+  stroke: hsl(var(--bepelican-deepblue) / 0.55);
+  stroke-width: 1.5;
+}
+
+.territory-guajira__cactus {
+  fill: hsl(var(--bepelican-green) / 0.75);
+}
+
+.territory-guajira__cactus-arm {
+  stroke: hsl(var(--bepelican-green) / 0.75);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+/* —— Sierra / Ciudad Perdida —— */
+.territory-sierra__mountain--far {
+  fill: hsl(var(--bepelican-green) / 0.35);
+}
+
+.territory-sierra__mountain {
+  fill: hsl(var(--bepelican-green) / 0.65);
+  stroke: hsl(var(--bepelican-deepblue) / 0.25);
+  stroke-width: 1;
+}
+
+.territory-sierra__snow-cap {
+  fill: hsl(0 0% 100% / 0.92);
+}
+
+.territory-sierra__jungle {
+  fill: hsl(var(--bepelican-green) / 0.85);
+}
+
+.territory-sierra__river {
+  fill: hsl(var(--bepelican-turquoise) / 0.7);
+}
+
+.territory-sierra__river-shine {
+  stroke: hsl(0 0% 100% / 0.5);
+  stroke-width: 2;
+  stroke-dasharray: 8 12;
+  animation: territoryRiverFlow 2.5s linear infinite;
+}
+
+.territory-sierra__palm {
+  transform-origin: 148px 90px;
+  animation: territoryPalmSway 5s ease-in-out infinite;
+}
+
+.territory-sierra__palm-trunk {
+  fill: hsl(var(--bepelican-brown));
+}
+
+.territory-sierra__palm-leaf {
+  fill: hsl(var(--bepelican-green));
+  stroke: hsl(var(--bepelican-green) / 0.8);
+  stroke-width: 1;
+}
+
+/* —— Bogotá andes —— */
+.territory-andes__hill {
+  fill: hsl(var(--bepelican-green) / 0.5);
+}
+
+.territory-andes__chapel {
+  fill: hsl(var(--bepelican-beige));
+  stroke: hsl(var(--bepelican-deepblue) / 0.35);
+  stroke-width: 1;
+}
+
+.territory-andes__cross {
+  stroke: hsl(var(--bepelican-orange));
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.territory-andes__skyline rect {
+  fill: hsl(var(--bepelican-deepblue) / 0.55);
+}
+
+.territory-andes__skyline rect:nth-child(2n) {
+  fill: hsl(var(--bepelican-gray) / 0.65);
+}
+
+.territory-andes__plateau {
+  fill: hsl(var(--bepelican-beige) / 0.5);
+}
+
+/* —— Barrio bogotano —— */
+.territory-barrio__house--1 {
+  fill: hsl(var(--bepelican-turquoise) / 0.65);
+}
+
+.territory-barrio__house--2 {
+  fill: hsl(var(--bepelican-orange) / 0.7);
+}
+
+.territory-barrio__house--3 {
+  fill: hsl(var(--bepelican-green) / 0.6);
+}
+
+.territory-barrio__house--4 {
+  fill: hsl(var(--bepelican-brown) / 0.55);
+}
+
+.territory-barrio__house--5 {
+  fill: hsl(var(--bepelican-beige));
+  stroke: hsl(var(--bepelican-deepblue) / 0.2);
+  stroke-width: 1;
+}
+
+.territory-barrio__mural {
+  fill: hsl(var(--bepelican-orange) / 0.85);
+}
+
+.territory-barrio__street {
+  stroke: hsl(var(--bepelican-deepblue) / 0.35);
+  stroke-width: 3;
+}
+
+.territory-barrio__lamp {
+  fill: hsl(var(--bepelican-orange));
+}
+
+/* —— Cocuy / Ritacuba —— */
+.territory-nevado__peak {
+  fill: hsl(var(--bepelican-deepblue) / 0.45);
+}
+
+.territory-nevado__glacier {
+  fill: hsl(0 0% 100% / 0.95);
+  stroke: hsl(var(--bepelican-turquoise) / 0.5);
+  stroke-width: 1;
+  animation: territoryGlacierShine 5s ease-in-out infinite;
+}
+
+.territory-nevado__snow-field {
+  fill: hsl(0 0% 100% / 0.88);
+}
+
+.territory-nevado__ridge {
+  stroke: hsl(var(--bepelican-turquoise) / 0.4);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 6;
+}
+
+.territory-nevado__label {
+  font-family: 'Lora', serif;
+  font-size: 9px;
+  fill: hsl(var(--bepelican-deepblue) / 0.55);
+  letter-spacing: 0.08em;
+}
+
+/* —— Amazonia —— */
+.territory-amazon__canopy {
+  fill: hsl(var(--bepelican-green) / 0.8);
+}
+
+.territory-amazon__river {
+  fill: hsl(var(--bepelican-turquoise) / 0.65);
+}
+
+.territory-amazon__bird {
+  stroke: hsl(var(--bepelican-orange));
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+/* Capa clima actual (nuboso, lluvia…) sobre el territorio */
+.territory-wx__cloud {
+  fill: hsl(0 0% 100% / 0.92);
+  stroke: hsl(var(--bepelican-gray) / 0.6);
+  stroke-width: 1.5;
+  animation: weatherCloudFloatA 5s ease-in-out infinite;
+}
+
+.territory-wx__cloud--heavy {
+  fill: hsl(var(--bepelican-gray) / 0.55);
+  stroke: hsl(var(--bepelican-deepblue) / 0.35);
+}
+
+.territory-wx__cloud--back {
+  animation: weatherCloudFloatB 6s ease-in-out infinite;
+}
+
+.territory-wx__rain-drop {
+  stroke: hsl(var(--bepelican-turquoise));
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  animation: weatherRainFall 0.85s ease-in infinite;
+}
+
+.territory-wx__bolt {
+  fill: hsl(var(--bepelican-orange));
+  animation: weatherBoltFlash 2.8s ease-in-out infinite;
+}
+
+.territory-wx__flake {
+  fill: hsl(0 0% 100%);
+  stroke: hsl(var(--bepelican-turquoise) / 0.6);
+  stroke-width: 1;
+  animation: weatherFlakeDrift 1.4s ease-in-out infinite;
+}
+
+.territory-wx__mist {
+  fill: hsl(var(--bepelican-turquoise) / 0.22);
+  animation: weatherMistWave 4s ease-in-out infinite;
+}
+
+.territory-wx__mist--2 {
+  animation-delay: 1.2s;
+}
+
+.territory-wx__sun-dim {
+  fill: hsl(var(--bepelican-orange) / 0.35);
+}
+
+.territory-climate-hero--wx-sun .territory-wx-overlay {
+  display: none;
+}
+
+.territory-climate-hero--wx-cloud .territory-guajira__sun,
+.territory-climate-hero--wx-cloud-light .territory-guajira__sun,
+.territory-climate-hero--wx-overcast .territory-guajira__sun,
+.territory-climate-hero--wx-rain .territory-guajira__sun,
+.territory-climate-hero--wx-storm .territory-guajira__sun,
+.territory-climate-hero--wx-mist .territory-guajira__sun {
+  opacity: 0.45;
+  animation: none;
+}
+
+.territory-climate-hero--wx-storm .territory-climate-hero__frame {
+  box-shadow: 0 10px 28px hsl(var(--bepelican-deepblue) / 0.18);
+}
+
+@media (min-width: 640px) {
+  .territory-climate-hero {
+    max-width: 15rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .territory-guajira__sun,
+  .territory-guajira__dune,
+  .territory-sierra__palm,
+  .territory-sierra__river-shine,
+  .territory-nevado__glacier,
+  .territory-wx__cloud,
+  .territory-wx__rain-drop,
+  .territory-wx__bolt,
+  .territory-wx__flake,
+  .territory-wx__mist {
+    animation: none !important;
+  }
+}
+
+@layer utilities {
+  .pt-header {
+    padding-top: var(--header-height, 4.5rem);
+  }
+
+  .sticky-below-header {
+    position: sticky;
+    top: var(--header-height, 4.5rem);
+  }
+
+  .pb-safe {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  .scroll-fade-right {
+    mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent);
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 2rem), transparent);
+  }
+}

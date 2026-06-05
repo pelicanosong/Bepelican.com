@@ -6,16 +6,13 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { LanguageProvider } from "@/contexts/LanguageContext";
+import { DisplayCurrencyProvider } from "@/contexts/DisplayCurrencyContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import PageLoader from "@/components/PageLoader";
 import ScrollToTop from "@/components/ScrollToTop";
 import { queryClient } from "@/lib/queryClient";
-import {
-  ExperienciaRedirect,
-  LibreriaRedirect,
-  AuthRedirect,
-} from "@/components/LegacyRedirect";
+import { ExperienciaRedirect, AuthRedirect } from "@/components/LegacyRedirect";
 
 const BePelicanHome = lazy(() => import("@/pages/BePelicanHome"));
 const Experiencias = lazy(() => import("@/pages/Experiencias"));
@@ -34,6 +31,7 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <LanguageProvider>
+        <DisplayCurrencyProvider>
         <TooltipProvider>
           <Toaster />
           <Sonner />
@@ -57,8 +55,8 @@ const App = () => (
                   {/* Biblioteca */}
                   <Route path="/biblioteca" element={<Bitacora />} />
                   <Route path="/biblioteca/:slug" element={<Bitacora />} />
-                  <Route path="/libreria" element={<LibreriaRedirect />} />
-                  <Route path="/libreria/:slug" element={<LibreriaRedirect />} />
+                  <Route path="/libreria" element={<Bitacora />} />
+                  <Route path="/libreria/:slug" element={<Bitacora />} />
 
                   {/* Checkout */}
                   <Route
@@ -108,6 +106,7 @@ const App = () => (
             </BrowserRouter>
           </ErrorBoundary>
         </TooltipProvider>
+        </DisplayCurrencyProvider>
       </LanguageProvider>
     </AuthProvider>
   </QueryClientProvider>

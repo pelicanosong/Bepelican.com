@@ -13,6 +13,8 @@ export const experienceFormSchema = z.object({
   location_city: z.string().min(2, "La ciudad es requerida"),
   location_name: z.string().min(2, "El nombre del lugar es requerido"),
   environment_type: z.array(z.string()).optional(),
+  briselda_destino: z.string().optional().or(z.literal("")),
+  climate_scene_preset: z.string().optional().or(z.literal("")),
 
   // Step 3: Details
   duration_minutes: z.coerce.number().min(1, "La duración es requerida"),

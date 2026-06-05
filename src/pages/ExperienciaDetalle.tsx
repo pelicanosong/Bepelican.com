@@ -17,10 +17,25 @@ import { useDateAvailability } from '@/hooks/useExperienceAvailability';
 import { usePricingRules } from '@/hooks/usePricingRules';
 import AvailabilityCalendar from '@/components/experience/AvailabilityCalendar';
 import PricingSelector from '@/components/experience/PricingSelector';
-import { useIsMobile } from '@/hooks/use-mobile';
 import ExperienceGallery from '@/components/experience/ExperienceGallery';
-import { formatPrice } from '@/lib/formatPrice';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet';
+import { PAGE_TOP, PAGE_X, STICKY_SIDEBAR, MOBILE_BOTTOM_BAR_SPACER } from '@/lib/layout';
+import { cn } from '@/lib/utils';
+import { useDisplayCurrency } from '@/contexts/DisplayCurrencyContext';
 import { useLanguage } from '@/contexts/LanguageContext';
+import {
+  ExperienceCurrencyPanel,
+  MobileConvertedUnitPrice,
+} from '@/components/experience/ExperienceCurrencyPanel';
+import { ConversionSourceFootnote } from '@/components/experience/ConversionPriceDisplay';
+import { ExperienceClimateScene } from '@/components/experience/ExperienceClimateScene';
+import { useExperienceClimate } from '@/hooks/useExperienceClimate';
+import { currencyPerPersonApprox, isNativeCopDisplay } from '@/lib/moniDisplayLabels';
 import * as React from 'react';
 
 const useBelowLg = () => {
@@ -39,13 +54,54 @@ const ExperienciaDetalle = () => {
   const { slug } = useParams<{ slug: string }>();
   const { language, t } = useLanguage();
   const { data: experience, isLoading, error } = useLocalizedExperience(slug || '');
+  const { data: climateDisplay, isLoading: climateLoading } = useExperienceClimate(slug);
+
+  const expBriselda = experience as {
+    briselda_destino?: string | null;
+    climate_scene_preset?: string | null;
+  } | undefined;
+
+  const climateForScene = React.useMemo(() => {
+    if (climateDisplay?.briselda_destino) return climateDisplay;
+    if (!experience || !expBriselda?.briselda_destino || !expBriselda?.climate_scene_preset) {
+      return null;
+    }
+    return {
+      experience_id: experience.id,
+      slug: experience.slug,
+      title: experience.title,
+      location_city: experience.location_city,
+      location_name: experience.location_name,
+      temperature_range: experience.temperature_range,
+      recommended_season: experience.recommended_season,
+      briselda_destino: expBriselda.briselda_destino,
+      climate_scene_preset: expBriselda.climate_scene_preset as import('@/lib/briseldaDestino').ClimateScenePresetKey,
+      preset_label_es: null,
+      preset_label_en: null,
+      preset_animation_config: null,
+      temperatura: null,
+      sensacion_termica: null,
+      humedad: null,
+      weather_descripcion: null,
+      viento_kmh: null,
+      presion: null,
+      visibilidad_m: null,
+      icono: null,
+      condicion_id: null,
+      weather_lat: null,
+      weather_lon: null,
+      nubes_pct: null,
+      weather_fetched_at: null,
+      weather_snapshot_hour: null,
+    };
+  }, [climateDisplay, experience, expBriselda]);
   const { user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
   const showMobileBooking = useBelowLg();
   const bookingSectionRef = useRef<HTMLDivElement>(null);
   const [mobileBookingOpen, setMobileBookingOpen] = useState(false);
+  const { displayCurrency } = useDisplayCurrency();
   
   const [selectedDate, setSelectedDate] = useState<string>('');
   const [participants, setParticipants] = useState(1);
@@ -225,18 +281,21 @@ const ExperienciaDetalle = () => {
   if (expAny["Se aceptan mascotas"]) accessibilityBadges.push({ icon: <PawPrint className="h-4 w-4" />, label: t('accessibility.pets') });
 
   // Booking sidebar content (shared between desktop and mobile)
-  const renderBookingContent = (onReserve: () => void) => (
+  const renderBookingContent = (onReserve: () => void, compact = false) => (
     <>
       <div className="mb-6">
         <label className="block text-sm font-medium text-foreground mb-3">
           <Calendar className="inline-block h-4 w-4 mr-1" /> {t('exp.selectDate')}
         </label>
         <AvailabilityCalendar
-          experienceId={experience.id} availableDays={experience.available_days}
-          maxParticipants={experience.max_participants} selectedDate={selectedDate}
-          onSelectDate={setSelectedDate} requestedParticipants={participants}
-          
+          experienceId={experience.id}
+          availableDays={experience.available_days}
+          maxParticipants={experience.max_participants}
+          selectedDate={selectedDate}
+          onSelectDate={setSelectedDate}
+          requestedParticipants={participants}
           onMonthChange={setCalendarMonth}
+          compact={compact}
         />
       </div>
 
@@ -264,57 +323,66 @@ const ExperienciaDetalle = () => {
         </div>
       )}
 
-      <div className="mb-6">
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-bold text-foreground">{formatPrice(unitPrice)}</span>
-          <span className="text-muted-foreground">{t('common.perPerson')}</span>
+      <ExperienceCurrencyPanel
+        className="mb-6"
+        unitPriceCop={unitPrice}
+        subtotalCop={unitPrice * participants}
+        totalCop={totalPrice}
+        perPersonSuffix={t('common.perPerson')}
+        subtotalLabel={t('exp.experienceLine', { n: participants })}
+        totalLabel={t('common.total')}
+      >
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-foreground mb-2">
+            <Users className="inline-block h-4 w-4 mr-1" /> {t('exp.participants')}
+          </label>
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setParticipants(Math.max(1, participants - 1))}
+              className="min-h-11 min-w-11 border border-input rounded-md flex items-center justify-center text-foreground hover:bg-muted transition-colors"
+              disabled={participants <= 1}
+              aria-label="Reducir participantes"
+            >
+              -
+            </button>
+            <span className="text-lg font-medium text-foreground w-8 text-center">{participants}</span>
+            <button
+              type="button"
+              onClick={() => {
+                const maxAllowed = dateAvailability?.remainingSpots
+                  ? Math.min(experience.max_participants, dateAvailability.remainingSpots)
+                  : experience.max_participants;
+                setParticipants(Math.min(maxAllowed, participants + 1));
+              }}
+              className="min-h-11 min-w-11 border border-input rounded-md flex items-center justify-center text-foreground hover:bg-muted transition-colors"
+              disabled={
+                participants >= experience.max_participants ||
+                (dateAvailability ? participants >= dateAvailability.remainingSpots : false)
+              }
+              aria-label="Aumentar participantes"
+            >
+              +
+            </button>
+          </div>
+          {selectedDate && dateAvailability ? (
+            <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+              <Users className="h-3 w-3" /> {t('exp.spotsAvailable', { n: dateAvailability.remainingSpots })}
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground mt-1">{t('exp.maxPeople', { n: experience.max_participants })}</p>
+          )}
         </div>
-      </div>
 
-      <div className="mb-6">
-        <label className="block text-sm font-medium text-foreground mb-2">
-          <Users className="inline-block h-4 w-4 mr-1" /> {t('exp.participants')}
-        </label>
-        <div className="flex items-center gap-3">
-          <button onClick={() => setParticipants(Math.max(1, participants - 1))} className="w-10 h-10 border border-input rounded-md flex items-center justify-center text-foreground hover:bg-muted transition-colors" disabled={participants <= 1}>-</button>
-          <span className="text-lg font-medium text-foreground w-8 text-center">{participants}</span>
-          <button
-            onClick={() => {
-              const maxAllowed = dateAvailability?.remainingSpots ? Math.min(experience.max_participants, dateAvailability.remainingSpots) : experience.max_participants;
-              setParticipants(Math.min(maxAllowed, participants + 1));
-            }}
-            className="w-10 h-10 border border-input rounded-md flex items-center justify-center text-foreground hover:bg-muted transition-colors"
-            disabled={participants >= experience.max_participants || (dateAvailability ? participants >= dateAvailability.remainingSpots : false)}
-          >+</button>
-        </div>
-        {selectedDate && dateAvailability ? (
-          <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
-            <Users className="h-3 w-3" /> {t('exp.spotsAvailable', { n: dateAvailability.remainingSpots })}
-          </p>
-        ) : (
-          <p className="text-xs text-muted-foreground mt-1">{t('exp.maxPeople', { n: experience.max_participants })}</p>
+        {selectedDate && dateAvailability && !dateAvailability.isAvailable && (
+          <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-2">
+            <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-destructive">
+              {dateAvailability.reason === 'day_not_available' ? t('exp.dayUnavailable') : t('exp.noSpots')}
+            </p>
+          </div>
         )}
-      </div>
-
-      {selectedDate && dateAvailability && !dateAvailability.isAvailable && (
-        <div className="mb-4 p-3 bg-destructive/10 border border-destructive/20 rounded-lg flex items-start gap-2">
-          <AlertCircle className="h-4 w-4 text-destructive flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-destructive">
-            {dateAvailability.reason === 'day_not_available' ? t('exp.dayUnavailable') : t('exp.noSpots')}
-          </p>
-        </div>
-      )}
-
-      <div className="border-t border-border pt-4 mb-6 space-y-2">
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-muted-foreground">{t('exp.experienceLine', { n: participants })}</span>
-          <span className="text-foreground">{formatPrice(unitPrice * participants)}</span>
-        </div>
-        <div className="flex items-center justify-between pt-2 border-t border-border">
-          <span className="text-muted-foreground font-medium">{t('common.total')}</span>
-          <span className="text-2xl font-bold text-foreground">{formatPrice(totalPrice)}</span>
-        </div>
-      </div>
+      </ExperienceCurrencyPanel>
 
       <Button
         onClick={onReserve}
@@ -347,27 +415,30 @@ const ExperienciaDetalle = () => {
       <BePelicanHeader />
 
       {/* Breadcrumb */}
-      <div className="border-b border-border">
-        <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center gap-2 text-sm">
-            <Link to="/experiencias" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1">
+      <div className={cn('border-b border-border', PAGE_TOP)}>
+        <div className={cn('container mx-auto py-3', PAGE_X)}>
+          <div className="flex items-center gap-2 text-sm min-w-0">
+            <Link to="/experiencias" className="text-muted-foreground hover:text-foreground transition-colors flex items-center gap-1 shrink-0">
               <ChevronLeft className="h-4 w-4" /> {t('exp.breadcrumb')}
             </Link>
             {experience.category && (
               <>
-                <span className="text-muted-foreground">/</span>
-                <Link to={`/experiencias?categoria=${experience.category.slug}`} className="text-muted-foreground hover:text-foreground transition-colors">
+                <span className="text-muted-foreground shrink-0">/</span>
+                <Link
+                  to={`/experiencias?categoria=${experience.category.slug}`}
+                  className="text-muted-foreground hover:text-foreground transition-colors shrink-0 hidden sm:inline"
+                >
                   {experience.category.name}
                 </Link>
               </>
             )}
-            <span className="text-muted-foreground">/</span>
-            <span className="text-foreground font-medium truncate max-w-[200px]">{experience.title}</span>
+            <span className="text-muted-foreground shrink-0">/</span>
+            <span className="text-foreground font-medium truncate min-w-0">{experience.title}</span>
           </div>
         </div>
       </div>
 
-      <main className="container mx-auto px-4 py-8">
+      <main className={cn('container mx-auto py-6 sm:py-8', PAGE_X, showMobileBooking && MOBILE_BOTTOM_BAR_SPACER, 'lg:pb-8')}>
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main content */}
           <div className="lg:col-span-2 space-y-8">
@@ -393,12 +464,14 @@ const ExperienciaDetalle = () => {
                 ))}
               </div>
 
-              <h1 className="font-display text-3xl md:text-4xl text-foreground mb-4">{experience.title}</h1>
+              <h1 className="font-display text-2xl sm:text-3xl md:text-4xl text-foreground mb-4 break-words">
+                {experience.title}
+              </h1>
               
-              <div className="flex flex-wrap gap-4 text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-primary" />
-                  <span>
+              <div className="flex flex-wrap gap-x-4 gap-y-2 text-muted-foreground">
+                <div className="flex items-start gap-2 min-w-0 max-w-full">
+                  <MapPin className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                  <span className="break-words">
                     {experience.location_name}, {experience.location_city}
                     {experience.location_department && `, ${experience.location_department}`}
                   </span>
@@ -570,27 +643,38 @@ const ExperienciaDetalle = () => {
               </div>
             )}
 
-            {/* Climate info */}
-            {(expAny.temperature_range || expAny.recommended_season) && (
-              <div className="bg-muted/30 rounded-lg p-6">
-                <h2 className="font-display text-xl font-bold text-primary mb-4 flex items-center gap-2">
-                  <Thermometer className="h-5 w-5" /> {t('exp.climate')}
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {expAny.temperature_range && (
-                    <div>
-                      <p className="text-sm font-medium text-foreground mb-1">{t('exp.typicalTemp')}</p>
-                      <p className="text-muted-foreground">{expAny.temperature_range}</p>
-                    </div>
-                  )}
-                  {expAny.recommended_season && (
-                    <div>
-                      <p className="text-sm font-medium text-foreground mb-1">{t('exp.recommendedSeason')}</p>
-                      <p className="text-muted-foreground">{expAny.recommended_season}</p>
-                    </div>
-                  )}
+            {/* Clima Briselda (en vivo + escena) o editorial estático */}
+            {climateForScene?.briselda_destino && climateForScene?.climate_scene_preset ? (
+              <ExperienceClimateScene
+                climate={climateForScene}
+                isLoading={climateLoading && !climateForScene.sensacion_termica}
+                staticClimate={{
+                  temperature_range: expAny.temperature_range,
+                  recommended_season: expAny.recommended_season,
+                }}
+              />
+            ) : (
+              (expAny.temperature_range || expAny.recommended_season) && (
+                <div className="bg-muted/30 rounded-lg p-6">
+                  <h2 className="font-display text-xl font-bold text-primary mb-4 flex items-center gap-2">
+                    <Thermometer className="h-5 w-5" /> {t('exp.climate')}
+                  </h2>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {expAny.temperature_range && (
+                      <div>
+                        <p className="text-sm font-medium text-foreground mb-1">{t('exp.typicalTemp')}</p>
+                        <p className="text-muted-foreground">{expAny.temperature_range}</p>
+                      </div>
+                    )}
+                    {expAny.recommended_season && (
+                      <div>
+                        <p className="text-sm font-medium text-foreground mb-1">{t('exp.recommendedSeason')}</p>
+                        <p className="text-muted-foreground">{expAny.recommended_season}</p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )
             )}
 
             {/* Requirements */}
@@ -646,46 +730,60 @@ const ExperienciaDetalle = () => {
           </div>
 
           {/* Booking sidebar - Desktop */}
-          <div className="hidden lg:block lg:col-span-1 self-start">
-            <div className="sticky top-24 bg-card border border-border rounded-lg p-6 shadow-sm max-h-[calc(100vh-7rem)] overflow-y-auto">
+          <div className="hidden lg:block lg:col-span-1">
+            <div className={cn(STICKY_SIDEBAR, 'bg-card border border-border rounded-lg p-6 shadow-sm')}>
               {renderBookingContent(handleReserve)}
             </div>
           </div>
         </div>
       </main>
 
-      {/* Mobile sticky bottom bar + expandable booking panel */}
+      {/* Mobile sticky bottom bar + booking sheet */}
       {showMobileBooking && (
         <>
-          {mobileBookingOpen && (
-            <div className="fixed inset-0 z-50 lg:hidden">
-              <div className="absolute inset-0 bg-black/50" onClick={() => setMobileBookingOpen(false)} />
-              <div className="absolute bottom-0 left-0 right-0 bg-background rounded-t-2xl max-h-[85vh] overflow-y-auto animate-fade-in shadow-2xl" ref={bookingSectionRef}>
-                <div className="sticky top-0 bg-background z-10 flex items-center justify-between p-4 border-b border-border">
-                  <h3 className="font-display text-lg text-foreground">{t('exp.bookExperience')}</h3>
-                  <button onClick={() => setMobileBookingOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full bg-muted">
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-                <div className="p-4">
-                  {renderBookingContent(() => { setMobileBookingOpen(false); handleReserve(); })}
-                </div>
+          <Sheet open={mobileBookingOpen} onOpenChange={setMobileBookingOpen}>
+            <SheetContent
+              side="bottom"
+              className="h-[92vh] max-h-[92vh] rounded-t-2xl p-0 flex flex-col lg:hidden [&>button.absolute]:min-h-11 [&>button.absolute]:min-w-11"
+            >
+              <SheetHeader className="px-4 pt-4 pb-3 border-b border-border shrink-0 text-left">
+                <SheetTitle className="font-display text-lg">{t('exp.bookExperience')}</SheetTitle>
+              </SheetHeader>
+              <div className="flex-1 min-h-0 overflow-y-auto p-4" ref={bookingSectionRef}>
+                {renderBookingContent(() => {
+                  setMobileBookingOpen(false);
+                  handleReserve();
+                }, true)}
               </div>
-            </div>
-          )}
+            </SheetContent>
+          </Sheet>
 
-          <div className="fixed bottom-0 left-0 right-0 z-40 bg-background border-t border-border px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="font-display text-xl text-foreground leading-tight">{formatPrice(unitPrice)}</p>
-                <p className="text-xs text-muted-foreground">{t('exp.copPerPerson')}</p>
+          <div className="fixed bottom-0 left-0 right-0 z-40 bg-background/95 backdrop-blur-md border-t border-border shadow-[0_-4px_20px_rgba(0,0,0,0.08)] pb-safe lg:hidden">
+            <div className="flex items-center justify-between gap-3 px-4 py-3">
+              <div className="min-w-0 flex-1">
+                <p className="font-display text-lg sm:text-xl text-foreground leading-tight truncate">
+                  <MobileConvertedUnitPrice unitPriceCop={unitPrice} currency={displayCurrency} />
+                </p>
+                <p className="font-sans text-xs text-muted-foreground truncate">
+                  {isNativeCopDisplay(displayCurrency)
+                    ? t('exp.copPerPerson')
+                    : currencyPerPersonApprox(displayCurrency)}
+                </p>
               </div>
-              <Button onClick={() => setMobileBookingOpen(true)} className="bg-bepelican-orange hover:bg-bepelican-orange/90 text-white rounded-full px-6 py-5 text-base font-medium">
-                <Calendar className="h-4 w-4 mr-2" /> {t('exp.bookNow')}
+              <Button
+                onClick={() => setMobileBookingOpen(true)}
+                className="bg-bepelican-orange hover:bg-bepelican-orange/90 text-white rounded-full px-5 sm:px-6 min-h-11 shrink-0 text-sm sm:text-base font-medium"
+              >
+                <Calendar className="h-4 w-4 mr-1.5 shrink-0" />
+                <span className="truncate">{selectedDate ? t('exp.bookNow') : t('exp.selectDate')}</span>
               </Button>
             </div>
+            {!isNativeCopDisplay(displayCurrency) && (
+              <div className="px-4 pb-2 -mt-1">
+                <ConversionSourceFootnote currency={displayCurrency} />
+              </div>
+            )}
           </div>
-          <div className="h-20 lg:hidden" />
         </>
       )}
 

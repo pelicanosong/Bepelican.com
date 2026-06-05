@@ -45,7 +45,9 @@ export function Step7Multimedia({
       <div className="space-y-4">
         <h4 className="font-medium text-foreground">Imagen de portada</h4>
         <p className="text-sm text-muted-foreground">
-          La imagen principal que aparecerá en las tarjetas y al inicio de la ficha.
+          La imagen principal que aparecerá en las tarjetas y al inicio de la ficha. Al subir,
+          generamos automáticamente versiones optimizadas (WebP y JPEG en 400, 800 y 1920&nbsp;px).
+          {currentSlug ? " Los cambios se guardan en la ficha al subir o cambiar imágenes." : ""}
         </p>
         <ImageUploader
           label="Portada"
@@ -59,7 +61,8 @@ export function Step7Multimedia({
       <div className="border-t border-border pt-6 space-y-4">
         <h4 className="font-medium text-foreground">Galería de imágenes</h4>
         <p className="text-sm text-muted-foreground">
-          Agrega hasta 10 imágenes. Estas se mostrarán en la galería dinámica de la experiencia.
+          Agrega hasta 10 imágenes para la galería. Puedes subir JPEG, PNG o WebP en alta calidad;
+          el sistema comprime y crea las variantes para carga rápida en la web.
         </p>
         <GalleryManager
           images={galleryImages}

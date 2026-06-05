@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 /**
- * Aplica migración i18n en Supabase Contabo vía SSH.
+ * Aplica una migración SQL en Supabase Contabo vía SSH.
+ * Uso: node scripts/apply-i18n-remote.mjs [ruta/migracion.sql]
  */
 import { readFileSync, existsSync, writeFileSync, unlinkSync } from 'fs';
 import { resolve, dirname } from 'path';
@@ -147,8 +148,13 @@ function main() {
     process.exit(1);
   }
 
-  const verifyCmd =
-    "docker exec supabase-db psql -U supabase_admin -d postgres -t -c \"SELECT table_name FROM information_schema.tables WHERE table_schema='ecommerce' AND (table_name LIKE 'i18n%' OR table_name='content_translations') ORDER BY 1;\"";
+  const isStorageRlsFix = migrationPath.includes('fix_experiences_storage_rls');
+  const isCategoriesRlsFix = migrationPath.includes('fix_experience_categories_rls');
+  const verifyCmd = isStorageRlsFix
+    ? "docker exec supabase-db psql -U supabase_admin -d postgres -t -c \"SELECT policyname FROM pg_policies WHERE schemaname='storage' AND tablename='objects' AND (policyname ILIKE '%experience%' OR policyname ILIKE '%lodging%') ORDER BY 1;\""
+    : isCategoriesRlsFix
+      ? "docker exec supabase-db psql -U supabase_admin -d postgres -t -c \"SELECT policyname FROM pg_policies WHERE schemaname='ecommerce' AND tablename='experience_categories' ORDER BY 1;\""
+      : "docker exec supabase-db psql -U supabase_admin -d postgres -t -c \"SELECT table_name FROM information_schema.tables WHERE table_schema='ecommerce' AND (table_name LIKE 'i18n%' OR table_name='content_translations') ORDER BY 1;\"";
 
   const verify = password
     ? spawnSync('expect', ['-c', `
@@ -165,7 +171,12 @@ expect eof
       });
 
   if (verify.stdout?.trim()) {
-    console.log('\n✓ Tablas en ecommerce:');
+    const label = isStorageRlsFix
+      ? 'Políticas Storage'
+      : isCategoriesRlsFix
+        ? 'Políticas experience_categories'
+        : 'Tablas en ecommerce';
+    console.log(`\n✓ ${label}:`);
     console.log(
       verify.stdout
         .trim()
@@ -175,7 +186,12 @@ expect eof
     );
   }
 
-  console.log('\n✓ Migración i18n aplicada en Contabo.');
+  const doneMsg = isStorageRlsFix
+    ? 'Fix de Storage (subida de fotos) aplicado en Contabo.'
+    : isCategoriesRlsFix
+      ? 'Fix de categorías (auto-guardado) aplicado en Contabo.'
+      : 'Migración aplicada en Contabo.';
+  console.log(`\n✓ ${doneMsg}`);
 }
 
 main();

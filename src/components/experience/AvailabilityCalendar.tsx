@@ -30,6 +30,8 @@ interface AvailabilityCalendarProps {
   lodgingPrices?: Map<string, CalendarPrice>;
   /** Callback al cambiar de mes (para re-fetch precios) */
   onMonthChange?: (month: Date) => void;
+  /** Celdas más compactas para sheets móviles */
+  compact?: boolean;
 }
 
 const AvailabilityCalendar = ({
@@ -41,6 +43,7 @@ const AvailabilityCalendar = ({
   requestedParticipants,
   lodgingPrices,
   onMonthChange,
+  compact = false,
 }: AvailabilityCalendarProps) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const today = startOfDay(new Date());
@@ -135,13 +138,15 @@ const AvailabilityCalendar = ({
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-muted/30 border-b border-border">
         <button
+          type="button"
           onClick={handlePrevMonth}
           disabled={!canGoPrev}
+          aria-label="Mes anterior"
           className={cn(
-            "p-1.5 rounded-full transition-all",
-            canGoPrev 
-              ? "hover:bg-muted text-foreground" 
-              : "text-muted-foreground/30 cursor-not-allowed"
+            'min-h-11 min-w-11 flex items-center justify-center rounded-full transition-all',
+            canGoPrev
+              ? 'hover:bg-muted text-foreground'
+              : 'text-muted-foreground/30 cursor-not-allowed'
           )}
         >
           <ChevronLeft className="h-5 w-5" />
@@ -152,13 +157,15 @@ const AvailabilityCalendar = ({
         </h3>
         
         <button
+          type="button"
           onClick={handleNextMonth}
           disabled={!canGoNext}
+          aria-label="Mes siguiente"
           className={cn(
-            "p-1.5 rounded-full transition-all",
-            canGoNext 
-              ? "hover:bg-muted text-foreground" 
-              : "text-muted-foreground/30 cursor-not-allowed"
+            'min-h-11 min-w-11 flex items-center justify-center rounded-full transition-all',
+            canGoNext
+              ? 'hover:bg-muted text-foreground'
+              : 'text-muted-foreground/30 cursor-not-allowed'
           )}
         >
           <ChevronRight className="h-5 w-5" />
@@ -168,17 +175,20 @@ const AvailabilityCalendar = ({
       {/* Week days */}
       <div className="grid grid-cols-7 border-b border-border">
         {weekDays.map((day) => (
-          <div 
-            key={day} 
-            className="py-2 text-center text-xs font-medium text-muted-foreground"
+          <div
+            key={day}
+            className={cn(
+              'py-2 text-center font-medium text-muted-foreground',
+              compact ? 'text-[10px] py-1' : 'text-xs'
+            )}
           >
-            {day}
+            {compact ? day.charAt(0) : day}
           </div>
         ))}
       </div>
 
       {/* Days grid */}
-      <div className="grid grid-cols-7 gap-px bg-border/50 p-1">
+      <div className={cn('grid grid-cols-7 gap-px bg-border/50', compact ? 'p-0.5' : 'p-1')}>
         {/* Empty cells for days before month starts */}
         {Array.from({ length: startDayOfWeek }).map((_, i) => (
           <div key={`empty-${i}`} className="aspect-square bg-card" />
@@ -202,10 +212,12 @@ const AvailabilityCalendar = ({
           return (
             <button
               key={dateString}
+              type="button"
               onClick={() => isClickable && onSelectDate(dateString)}
               disabled={!isClickable}
               className={cn(
-                "aspect-square flex flex-col items-center justify-center relative bg-card transition-all rounded-md m-0.5",
+                'flex flex-col items-center justify-center relative bg-card transition-all rounded-md',
+                compact ? 'h-10 m-0.5' : 'aspect-square m-0.5',
                 status === 'past' && "text-muted-foreground/30 cursor-not-allowed",
                 status === 'unavailable' && "text-muted-foreground/40 cursor-not-allowed bg-muted/20",
                 status === 'blocked' && "text-destructive/60 cursor-not-allowed bg-destructive/10 line-through",

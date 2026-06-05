@@ -2,8 +2,63 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 
 // Configure worker using Vite's ?url import for reliable loading
-import pdfjsWorker from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
+// Worker desde CDN: nginx servía .mjs como octet-stream → "Failed to fetch dynamically imported module"
+const PDFJS_VERSION = '4.10.38';
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/build/pdf.worker.min.mjs`;
+
+const MAX_PDF_BYTES = 50 * 1024 * 1024;
+const RECOMMENDED_PDF_BYTES = 20 * 1024 * 1024;
+
+function formatMb(bytes: number) {
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function fetchPdfBytes(
+  url: string,
+  onProgress: (pct: number) => void
+): Promise<ArrayBuffer> {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`No se pudo descargar el PDF (error ${res.status}).`);
+  }
+
+  const total = Number(res.headers.get('content-length') || 0);
+  if (total > MAX_PDF_BYTES) {
+    throw new Error(
+      `El PDF pesa ${formatMb(total)}. Comprimilo a menos de ${formatMb(RECOMMENDED_PDF_BYTES)} (máximo ${formatMb(MAX_PDF_BYTES)}).`
+    );
+  }
+
+  if (!res.body || !total) {
+    onProgress(35);
+    return res.arrayBuffer();
+  }
+
+  const reader = res.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let loaded = 0;
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    chunks.push(value);
+    loaded += value.length;
+    onProgress(Math.min(45, Math.round((loaded / total) * 45)));
+  }
+
+  const merged = new Uint8Array(loaded);
+  let offset = 0;
+  for (const chunk of chunks) {
+    merged.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return merged.buffer;
+}
+
+function pdfLoadErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return 'Error al cargar el PDF. Probá con un archivo más liviano (menos de 20 MB).';
+}
 
 interface PdfPage {
   pageNumber: number;
@@ -25,6 +80,8 @@ export const usePdfToPages = (pdfUrl: string | null, options?: {
   scale?: number;
   preloadPages?: number;
   coverImageUrl?: string | null;
+  /** Incrementar para forzar recarga (botón Reintentar). */
+  loadKey?: number;
 }): UsePdfToPagesResult => {
   const [pages, setPages] = useState<PdfPage[]>([]);
   const [totalPages, setTotalPages] = useState(0);
@@ -87,7 +144,17 @@ export const usePdfToPages = (pdfUrl: string | null, options?: {
       }
 
       try {
-        const pdf = await pdfjsLib.getDocument(pdfUrl).promise;
+        const pdfBytes = await fetchPdfBytes(pdfUrl, (pct) => {
+          if (!cancelled) setProgress(Math.max(5, pct));
+        });
+        if (cancelled) return;
+
+        setProgress(48);
+        const pdf = await pdfjsLib.getDocument({
+          data: pdfBytes,
+          useSystemFonts: true,
+          disableFontFace: true,
+        }).promise;
         if (cancelled) return;
 
         pdfDocRef.current = pdf;
@@ -136,7 +203,7 @@ export const usePdfToPages = (pdfUrl: string | null, options?: {
       } catch (err) {
         if (!cancelled) {
           console.error('Error loading PDF:', err);
-          setError('Error al cargar el PDF');
+          setError(pdfLoadErrorMessage(err));
           setIsLoading(false);
         }
       }
@@ -144,7 +211,7 @@ export const usePdfToPages = (pdfUrl: string | null, options?: {
 
     loadPdf();
     return () => { cancelled = true; };
-  }, [pdfUrl, hiResScale, lowResScale, preloadPages, coverImageUrl, renderPage]);
+  }, [pdfUrl, hiResScale, lowResScale, preloadPages, coverImageUrl, renderPage, options?.loadKey]);
 
   // Load a specific page on demand (hi-res only)
   const loadPage = useCallback(async (pageNumber: number): Promise<string | null> => {

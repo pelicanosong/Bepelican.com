@@ -18,6 +18,7 @@ const DEBUG = false;
 const FlipbookViewer = ({ pdfUrl, title, coverImageUrl }: FlipbookViewerProps) => {
   const bookRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [dims, setDims] = useState({ w: 0, h: 0 });
   const isMobile = useIsMobile();
@@ -25,6 +26,7 @@ const FlipbookViewer = ({ pdfUrl, title, coverImageUrl }: FlipbookViewerProps) =
   const { pages, totalPages, isLoading, error, loadPage, progress, pageAspectRatio } = usePdfToPages(pdfUrl, {
     preloadPages: 6,
     coverImageUrl,
+    loadKey: loadAttempt,
   });
 
   // Measure the actual container and derive book dimensions from it
@@ -99,7 +101,7 @@ const FlipbookViewer = ({ pdfUrl, title, coverImageUrl }: FlipbookViewerProps) =
     return (
       <div className="flex flex-col items-center justify-center h-full text-center p-8">
         <p className="text-destructive mb-4">{error}</p>
-        <Button variant="outline" onClick={() => window.location.reload()}>Reintentar</Button>
+        <Button variant="outline" onClick={() => setLoadAttempt((n) => n + 1)}>Reintentar</Button>
       </div>
     );
   }

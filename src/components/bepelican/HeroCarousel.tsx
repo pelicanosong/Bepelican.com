@@ -87,7 +87,7 @@ const HeroCarousel = () => {
   if (!slide) return null;
 
   return (
-    <section className="relative min-h-[90vh] overflow-hidden">
+    <section className="relative min-h-[85vh] sm:min-h-[90vh] overflow-hidden">
       {/* Background Images */}
       {slides.map((s, index) => (
         <div
@@ -103,7 +103,7 @@ const HeroCarousel = () => {
       ))}
 
       {/* Content */}
-      <div className="relative z-10 container mx-auto px-6 py-20 md:py-32 flex items-center min-h-[90vh]">
+      <div className="relative z-10 container mx-auto px-4 sm:px-6 py-16 sm:py-20 md:py-32 flex items-center min-h-[85vh] sm:min-h-[90vh]">
         <div className="max-w-3xl">
           {slide.badge && (
             <div className={cn(
@@ -116,7 +116,7 @@ const HeroCarousel = () => {
           )}
 
           <h1 className={cn(
-            "font-display text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-white mb-6",
+            "font-display text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl text-white mb-6",
             "transform transition-all duration-500 delay-100",
             isAnimating ? "opacity-0 translate-y-4" : "opacity-100 translate-y-0"
           )}>
@@ -157,23 +157,39 @@ const HeroCarousel = () => {
 
       {/* Navigation */}
       {slides.length > 1 && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4">
-          <button onClick={prevSlide} className="p-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-colors">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-20 flex items-center gap-4 pb-safe">
+          <button
+            type="button"
+            onClick={prevSlide}
+            className="min-h-11 min-w-11 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-colors"
+            aria-label="Slide anterior"
+          >
             <ChevronLeft className="h-5 w-5 text-white" />
           </button>
-          <div className="flex gap-2">
+          <div className="flex gap-1">
             {slides.map((_, index) => (
               <button
                 key={index}
+                type="button"
                 onClick={() => goToSlide(index)}
-                className={cn(
-                  "w-2 h-2 rounded-full transition-all duration-300",
-                  index === currentSlide ? "w-8 bg-bepelican-orange" : "bg-white/50 hover:bg-white/80"
-                )}
-              />
+                aria-label={`Ir al slide ${index + 1}`}
+                className="min-h-11 min-w-11 flex items-center justify-center"
+              >
+                <span
+                  className={cn(
+                    'rounded-full transition-all duration-300',
+                    index === currentSlide ? 'w-8 h-2 bg-bepelican-orange' : 'w-2 h-2 bg-white/50 hover:bg-white/80'
+                  )}
+                />
+              </button>
             ))}
           </div>
-          <button onClick={nextSlide} className="p-2 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-colors">
+          <button
+            type="button"
+            onClick={nextSlide}
+            className="min-h-11 min-w-11 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md transition-colors"
+            aria-label="Slide siguiente"
+          >
             <ChevronRight className="h-5 w-5 text-white" />
           </button>
         </div>

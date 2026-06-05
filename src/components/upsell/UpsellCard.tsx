@@ -1,7 +1,8 @@
 import { Clock, MapPin, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatPrice } from "@/lib/formatPrice";
+import { ExperiencePriceWithCurrency } from "@/components/experience/ExperiencePriceWithCurrency";
+import { ExperienceImage } from "@/components/experience/ExperienceImage";
 
 interface UpsellCardProps {
   id: string;
@@ -45,9 +46,11 @@ const UpsellCard = ({
         {/* Image */}
         <div className="w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-muted">
           {coverImage ? (
-            <img
+            <ExperienceImage
               src={coverImage}
               alt={title}
+              size="thumb"
+              priority="list"
               className="w-full h-full object-cover"
             />
           ) : (
@@ -74,8 +77,8 @@ const UpsellCard = ({
           </div>
 
           <div className="flex items-center justify-between mt-2">
-            <span className="font-semibold text-sm text-primary">
-              {formatPrice(price)}
+            <span className="font-semibold text-sm text-bepelican-turquoise">
+              <ExperiencePriceWithCurrency amountCop={price} className="text-sm font-semibold" />
             </span>
             <Button
               size="sm"

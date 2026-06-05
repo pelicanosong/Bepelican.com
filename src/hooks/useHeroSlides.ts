@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { withResolvedMedia } from '@/lib/mediaUrl';
 
 export interface HeroSlide {
   id: string;
@@ -25,7 +26,7 @@ export const useHeroSlides = () => {
         .eq('is_active', true)
         .order('display_order');
       if (error) throw error;
-      return data as HeroSlide[];
+      return (data || []).map((s) => withResolvedMedia(s)) as HeroSlide[];
     },
   });
 };

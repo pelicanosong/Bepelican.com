@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import type { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 import type { QueryEnabledOptions } from '@/lib/queryClient';
+import { getErrorMessage } from '@/lib/errorMessage';
 
 type Experience = Tables<'experiences'>;
 type Category = Tables<'categories_experience'>;
@@ -159,18 +160,21 @@ export const useSyncExperienceCategories = () => {
         .from('experience_categories')
         .delete()
         .eq('experience_id', experienceId);
-      if (delError) throw delError;
+      if (delError) {
+        throw new Error(getErrorMessage(delError));
+      }
 
-      // Insert new
       if (categoryIds.length > 0) {
-        const rows = categoryIds.map(catId => ({
+        const rows = categoryIds.map((catId) => ({
           experience_id: experienceId,
           category_id: catId,
         }));
         const { error: insError } = await supabase
           .from('experience_categories')
           .insert(rows);
-        if (insError) throw insError;
+        if (insError) {
+          throw new Error(getErrorMessage(insError));
+        }
       }
     },
     onSuccess: () => {

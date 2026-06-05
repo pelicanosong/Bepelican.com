@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
-import { Upload, X, Star, Loader2, Image as ImageIcon } from 'lucide-react';
+import { Upload, X, Star, Loader2, Image as ImageIcon, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { GalleryImage } from '@/hooks/useExperienceImages';
 
@@ -27,6 +27,8 @@ export function GalleryManager({
   maxImages = 10,
 }: GalleryManagerProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const replaceInputRef = useRef<HTMLInputElement>(null);
+  const [replacingIndex, setReplacingIndex] = useState<number | null>(null);
   const [uploadingCount, setUploadingCount] = useState<number>(0);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,6 +81,27 @@ export function GalleryManager({
     }
   };
 
+  const handleReplaceFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    const index = replacingIndex;
+    if (!file || index === null) return;
+
+    const url = await onUploadImage(file, index);
+    if (url) {
+      onImagesChange(
+        images.map((img) => (img.index === index ? { ...img, url } : img))
+      );
+    }
+
+    setReplacingIndex(null);
+    if (replaceInputRef.current) replaceInputRef.current.value = '';
+  };
+
+  const startReplace = (index: number) => {
+    setReplacingIndex(index);
+    replaceInputRef.current?.click();
+  };
+
   const handleAltChange = (index: number, alt: string) => {
     const updated = images.map((img) =>
       img.index === index ? { ...img, alt } : img
@@ -127,16 +150,37 @@ export function GalleryManager({
         </div>
       )}
 
+      <Input
+        ref={replaceInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={handleReplaceFile}
+        disabled={isUploading}
+        className="hidden"
+      />
+
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {images.map((image) => (
           <Card key={image.index} className="overflow-hidden">
             <div className="relative aspect-square">
               <img
+                key={image.url}
                 src={image.url}
                 alt={image.alt || `Imagen ${image.index}`}
                 className="w-full h-full object-cover"
               />
               <div className="absolute top-1 right-1 flex gap-1">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => startReplace(image.index)}
+                  disabled={isUploading}
+                  title="Cambiar esta imagen"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                </Button>
                 <Button
                   type="button"
                   variant="secondary"

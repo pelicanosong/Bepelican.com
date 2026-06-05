@@ -21,6 +21,7 @@ import {
   ENTITY_I18N_FIELDS,
   syncEntityTranslations,
 } from './lib/translation-engine.mjs';
+import { mirrorExperienceCover } from './lib/media-storage.mjs';
 
 const args = new Set(process.argv.slice(2));
 const dryRun = args.has('--dry-run');
@@ -52,6 +53,7 @@ async function main() {
     auth: { persistSession: false, autoRefreshToken: false },
     db: { schema: 'ecommerce' },
   });
+  supabase.supabaseUrl = supabaseUrl;
 
   if (dryRun) log('Modo dry-run — no escribe en Supabase\n');
   if (skipTranslate) log('Traducción IA desactivada (--skip-translate)\n');
@@ -160,6 +162,15 @@ async function main() {
       .split('|')
       .map((s) => s.trim())
       .filter(Boolean);
+
+    if (!dryRun && row.cover_image) {
+      try {
+        row.cover_image = await mirrorExperienceCover(supabase, row.slug, row.cover_image);
+        log(`  imagen → storage: ${row.slug}`);
+      } catch (e) {
+        log(`  ⚠ imagen ${row.slug}: ${e.message}`);
+      }
+    }
 
     if (dryRun) {
       log(`  [dry-run] experiencia ${row.slug}`);

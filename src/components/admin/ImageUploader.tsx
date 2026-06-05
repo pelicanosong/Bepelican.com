@@ -65,6 +65,7 @@ export function ImageUploader({
           ) : displayImage ? (
             <>
               <img
+                key={displayImage}
                 src={displayImage}
                 alt="Preview"
                 className="w-full h-full object-cover"

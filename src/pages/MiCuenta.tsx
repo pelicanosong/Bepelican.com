@@ -19,6 +19,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { ExperienceImage } from '@/components/experience/ExperienceImage';
 import { useUserBookings } from '@/hooks/useUserBookings';
 import { supabase } from '@/integrations/supabase/client';
 import { formatPrice } from '@/lib/formatPrice';
@@ -133,11 +134,25 @@ const MiCuenta = () => {
     showTotal?: boolean;
   }) => (
     <div className="flex gap-4 bg-card border rounded-xl p-4 hover:border-bepelican-orange/30 transition-colors">
-      <img
-        src={booking.experience.cover_image || 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=120&h=120&fit=crop'}
-        alt={booking.experience.title}
-        className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
-      />
+      {booking.experience.cover_image ? (
+        <ExperienceImage
+          src={booking.experience.cover_image}
+          alt={booking.experience.title}
+          size="thumb"
+          priority="list"
+          className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+        />
+      ) : (
+        <img
+          src="https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=120&h=120&fit=crop"
+          width={120}
+          height={120}
+          loading="lazy"
+          decoding="async"
+          alt={booking.experience.title}
+          className="w-20 h-20 rounded-lg object-cover flex-shrink-0"
+        />
+      )}
       <div className="flex-1 min-w-0">
         <h4 className="font-medium text-foreground truncate">{booking.experience.title}</h4>
         <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">

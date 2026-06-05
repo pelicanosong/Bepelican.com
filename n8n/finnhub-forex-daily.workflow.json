@@ -1,0 +1,146 @@
+{
+  "name": "Moni Exchange",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 6 * * *"
+            }
+          ]
+        }
+      },
+      "id": "schedule-6am",
+      "name": "Cada día 6:00 AM",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {},
+      "id": "manual-trigger",
+      "name": "Manual (probar ahora)",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 200]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.frankfurter.dev/v2/rates",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "base", "value": "USD" },
+            {
+              "name": "quotes",
+              "value": "EUR,GBP,MXN,CAD,BRL,CLP,ARS,COP"
+            },
+            {
+              "name": "from",
+              "value": "={{ $now.minus(7, 'days').toFormat('yyyy-MM-dd') }}"
+            },
+            { "name": "to", "value": "={{ $now.toFormat('yyyy-MM-dd') }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "frankfurter-rates",
+      "name": "Frankfurter USD rates",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [280, 0]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "https://api.frankfurter.dev/v2/rates",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            { "name": "base", "value": "USD" },
+            { "name": "quotes", "value": "COP" },
+            { "name": "providers", "value": "BANREP" },
+            {
+              "name": "from",
+              "value": "={{ $now.minus(7, 'days').toFormat('yyyy-MM-dd') }}"
+            },
+            { "name": "to", "value": "={{ $now.toFormat('yyyy-MM-dd') }}" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "frankfurter-cop-banrep",
+      "name": "Frankfurter COP (Banrep)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [280, 200]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge-rates",
+      "name": "Combinar tasas",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3,
+      "position": [520, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const PAIRS = {\n  EUR: 'EUR/USD',\n  CAD: 'CAD/USD',\n  GBP: 'GBP/USD',\n  MXN: 'MXN/USD',\n  ARS: 'ARS/USD',\n  CLP: 'CLP/USD',\n  BRL: 'BRL/USD',\n  COP: 'COP/USD',\n};\n\nfunction flatNode(name) {\n  return $(name)\n    .all()\n    .flatMap((item) => {\n      const j = item.json;\n      return Array.isArray(j) ? j : [j];\n    });\n}\n\nconst blended = flatNode('Frankfurter USD rates');\nconst banrep = flatNode('Frankfurter COP (Banrep)');\n\nif (!blended.length && !banrep.length) {\n  throw new Error('Frankfurter no devolvió datos');\n}\n\nconst byQuote = {};\nfor (const row of blended) {\n  if (!row?.quote || row.rate == null || row.quote === 'COP') continue;\n  if (!byQuote[row.quote]) byQuote[row.quote] = [];\n  byQuote[row.quote].push(row);\n}\n\nconst copRows = banrep.filter((r) => r?.quote === 'COP' && r.rate != null);\nif (copRows.length) byQuote.COP = copRows;\n\nconst fetchedAt = new Date().toISOString();\nconst out = [];\n\nfor (const [quote, series] of Object.entries(byQuote)) {\n  series.sort((a, b) => a.date.localeCompare(b.date));\n  const latest = series[series.length - 1];\n  const rates = series.map((s) => Number(s.rate));\n  const h = Math.max(...rates);\n  const c = Number(latest.rate);\n\n  out.push({\n    json: {\n      base: 'USD',\n      par: PAIRS[quote] || `${quote}/USD`,\n      quote_currency: quote,\n      c,\n      h,\n      rate: c,\n      rate_date: latest.date,\n      source: 'frankfurter',\n      provider: quote === 'COP' ? 'banrep' : 'blended',\n      fetched_at: fetchedAt,\n    },\n  });\n}\n\nif (!out.length) {\n  throw new Error('No se pudo normalizar ningún par de Frankfurter');\n}\n\nreturn out;"
+      },
+      "id": "normalize-rates",
+      "name": "Normalizar c + h",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [760, 100]
+    },
+    {
+      "parameters": {
+        "jsCode": "const baseUrl = ($env.SUPABASE_URL || '').replace(/\\/$/, '');\nconst serviceKey = $env.SUPABASE_SERVICE_ROLE_KEY || '';\n\nif (!baseUrl || !serviceKey) {\n  throw new Error(\n    'Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en n8n ($env; npm run n8n:moni)',\n  );\n}\n\nconst upsertUrl = `${baseUrl}/rest/v1/daily_rates?on_conflict=rate_date,quote_currency`;\nconst headers = {\n  apikey: serviceKey,\n  Authorization: `Bearer ${serviceKey}`,\n  'Content-Type': 'application/json',\n  'Content-Profile': 'moni_exchange',\n  Prefer: 'resolution=merge-duplicates,return=representation',\n};\n\nconst saved = [];\n\nfor (const item of $input.all()) {\n  const j = item.json;\n  const row = {\n    rate_date: j.rate_date,\n    base_currency: 'USD',\n    quote_currency: j.quote_currency,\n    par: j.par,\n    c: j.c,\n    h: j.h,\n    rate: j.rate,\n    source: j.source || 'frankfurter',\n    provider: j.provider || 'blended',\n    fetched_at: j.fetched_at,\n  };\n\n  const res = await this.helpers.httpRequest({\n    method: 'POST',\n    url: upsertUrl,\n    headers,\n    body: row,\n    json: true,\n  });\n\n  saved.push({ json: { ...row, supabase: res } });\n}\n\nreturn saved;"
+      },
+      "id": "supabase-save",
+      "name": "Guardar en Supabase",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [1020, 100]
+    }
+  ],
+  "connections": {
+    "Cada día 6:00 AM": {
+      "main": [
+        [
+          { "node": "Frankfurter USD rates", "type": "main", "index": 0 },
+          { "node": "Frankfurter COP (Banrep)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Manual (probar ahora)": {
+      "main": [
+        [
+          { "node": "Frankfurter USD rates", "type": "main", "index": 0 },
+          { "node": "Frankfurter COP (Banrep)", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Frankfurter USD rates": {
+      "main": [[{ "node": "Combinar tasas", "type": "main", "index": 0 }]]
+    },
+    "Frankfurter COP (Banrep)": {
+      "main": [[{ "node": "Combinar tasas", "type": "main", "index": 1 }]]
+    },
+    "Combinar tasas": {
+      "main": [[{ "node": "Normalizar c + h", "type": "main", "index": 0 }]]
+    },
+    "Normalizar c + h": {
+      "main": [[{ "node": "Guardar en Supabase", "type": "main", "index": 0 }]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/Bogota"
+  }
+}

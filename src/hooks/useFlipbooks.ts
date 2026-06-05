@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { withResolvedMedia } from '@/lib/mediaUrl';
+import { resolveFlipbookSlug } from '@/lib/flipbookSlugAliases';
 
 export interface FlipbookCategory {
   id: string;
@@ -73,12 +75,14 @@ export const useFlipbooks = (filters?: FlipbookFilters) => {
       if (error) throw error;
 
       // Transform data to include categories
-      const flipbooks = data?.map((flipbook: any) => ({
-        ...flipbook,
-        categories: flipbook.flipbook_category_relations?.map(
-          (rel: any) => rel.flipbook_categories
-        ).filter(Boolean) || []
-      })) as Flipbook[];
+      const flipbooks = data?.map((flipbook: any) =>
+        withResolvedMedia({
+          ...flipbook,
+          categories: flipbook.flipbook_category_relations?.map(
+            (rel: any) => rel.flipbook_categories
+          ).filter(Boolean) || [],
+        })
+      ) as Flipbook[];
 
       // Filter by category if specified
       if (filters?.categorySlug) {
@@ -93,8 +97,9 @@ export const useFlipbooks = (filters?: FlipbookFilters) => {
 };
 
 export const useFlipbook = (slug: string) => {
+  const canonicalSlug = slug ? resolveFlipbookSlug(slug) : '';
   return useQuery({
-    queryKey: ['flipbook', slug],
+    queryKey: ['flipbook', slug, canonicalSlug],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('flipbooks')
@@ -107,7 +112,7 @@ export const useFlipbook = (slug: string) => {
             experiences(*)
           )
         `)
-        .eq('slug', slug)
+        .eq('slug', canonicalSlug)
         .eq('status', 'published')
         .maybeSingle();
 
@@ -115,15 +120,16 @@ export const useFlipbook = (slug: string) => {
 
       if (!data) return null;
 
-      return {
+      return withResolvedMedia({
         ...data,
         categories: data.flipbook_category_relations?.map(
           (rel: any) => rel.flipbook_categories
         ).filter(Boolean) || [],
         related_experiences: data.flipbook_experience_links?.map(
-          (link: any) => link.experiences
-        ).filter(Boolean) || []
-      } as Flipbook & { related_experiences: any[] };
+          (link: any) =>
+            link.experiences ? withResolvedMedia(link.experiences) : link.experiences
+        ).filter(Boolean) || [],
+      }) as Flipbook & { related_experiences: any[] };
     },
     enabled: !!slug
   });

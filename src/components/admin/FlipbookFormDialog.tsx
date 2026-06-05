@@ -5,6 +5,10 @@
  import { Loader2, Upload, X, Plus } from 'lucide-react';
  import { AdminFlipbook, useCreateFlipbook, useUpdateFlipbook } from '@/hooks/useAdminFlipbooks';
  import { useFlipbookCategories } from '@/hooks/useFlipbooks';
+ import { useToast } from '@/hooks/use-toast';
+
+ const MAX_PDF_BYTES = 50 * 1024 * 1024;
+ const RECOMMENDED_PDF_BYTES = 20 * 1024 * 1024;
  import {
    Dialog,
    DialogContent,
@@ -53,8 +57,31 @@
    const [pdfFile, setPdfFile] = useState<File | null>(null);
    const [coverFile, setCoverFile] = useState<File | null>(null);
    const [newTag, setNewTag] = useState('');
+   const { toast } = useToast();
    
    const { data: categories = [] } = useFlipbookCategories();
+
+   const handlePdfSelect = (file: File | null) => {
+     if (!file) {
+       setPdfFile(null);
+       return;
+     }
+     if (file.size > MAX_PDF_BYTES) {
+       toast({
+         title: 'PDF demasiado pesado',
+         description: `Máximo ${(MAX_PDF_BYTES / (1024 * 1024)).toFixed(0)} MB. Comprimilo en Canva o Acrobat.`,
+         variant: 'destructive',
+       });
+       return;
+     }
+     if (file.size > RECOMMENDED_PDF_BYTES) {
+       toast({
+         title: 'PDF muy pesado',
+         description: `Pesa ${(file.size / (1024 * 1024)).toFixed(1)} MB. Para que cargue bien en la web, idealmente menos de 20 MB.`,
+       });
+     }
+     setPdfFile(file);
+   };
    const createFlipbook = useCreateFlipbook();
    const updateFlipbook = useUpdateFlipbook();
  
@@ -204,6 +231,9 @@
              {/* PDF Upload */}
              <div className="space-y-2">
                <FormLabel>Archivo PDF {!flipbook && '*'}</FormLabel>
+               <p className="text-xs text-muted-foreground">
+                 Recomendado: menos de 20 MB (máximo 50 MB). Archivos grandes tardan en abrir en la biblioteca.
+               </p>
                <div className="flex items-center gap-4">
                  <label className="flex items-center gap-2 px-4 py-2 border border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
                    <Upload className="h-4 w-4" />
@@ -214,7 +244,7 @@
                      type="file"
                      accept=".pdf"
                      className="hidden"
-                     onChange={(e) => setPdfFile(e.target.files?.[0] || null)}
+                     onChange={(e) => handlePdfSelect(e.target.files?.[0] || null)}
                    />
                  </label>
                  {pdfFile && (

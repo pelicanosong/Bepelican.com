@@ -130,7 +130,7 @@ export default function Admin() {
               {activeTab === "flipbooks" && (
                 <Button onClick={() => setFlipbookDialogOpen(true)} className="gap-2">
                   <Plus className="h-4 w-4" />
-                  Nuevo Flipbook
+                  Nuevo PDF
                 </Button>
               )}
               {activeTab === "hospedajes" && (
@@ -155,7 +155,7 @@ export default function Admin() {
           <TabsList className="mb-4">
             <TabsTrigger value="home" className="gap-2">
               <Home className="h-4 w-4" />
-              Home
+              Home (banner)
             </TabsTrigger>
             <TabsTrigger value="experiencias" className="gap-2">
               <MapPin className="h-4 w-4" />
@@ -163,7 +163,7 @@ export default function Admin() {
             </TabsTrigger>
             <TabsTrigger value="flipbooks" className="gap-2">
               <BookOpen className="h-4 w-4" />
-              Librería
+              Biblioteca (PDFs)
             </TabsTrigger>
             <TabsTrigger value="disponibilidad" className="gap-2">
               <CalendarDays className="h-4 w-4" />
@@ -254,9 +254,9 @@ export default function Admin() {
           <TabsContent value="flipbooks" className="space-y-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Librería Pelicana</CardTitle>
+                <CardTitle>Biblioteca — guías PDF</CardTitle>
                 <span className="text-sm text-muted-foreground">
-                  {flipbooks?.length || 0} flipbooks
+                  {flipbooks?.length || 0} PDFs
                 </span>
               </CardHeader>
               <CardContent>

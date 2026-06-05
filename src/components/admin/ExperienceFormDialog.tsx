@@ -8,6 +8,8 @@ import { Form } from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { useCategories } from "@/hooks/useExperiences";
 import { useCreateExperience, useUpdateExperience, useSyncExperienceCategories, AdminExperienceWithCategory } from "@/hooks/useAdminExperiences";
+import { getErrorMessage } from "@/lib/errorMessage";
+import { purgeExperienceMediaAtUrl } from "@/lib/experienceStorage";
 import { useExperienceImages, GalleryImage } from "@/hooks/useExperienceImages";
 import { usePricingRules } from "@/hooks/usePricingRules";
 import { supabase } from "@/integrations/supabase/client";
@@ -55,6 +57,7 @@ export function ExperienceFormDialog({ open, onOpenChange, experience }: Experie
   const [lodgingLinks, setLodgingLinks] = useState<LodgingLink[]>([]);
   const [lodgingRequired, setLodgingRequired] = useState(false);
   const [savedExperienceId, setSavedExperienceId] = useState<string | null>(null);
+  const [baselineCategoryIds, setBaselineCategoryIds] = useState<string[]>([]);
   const [isSavingStep, setIsSavingStep] = useState(false);
 
   const { data: existingRules } = usePricingRules(experience?.id);
@@ -84,6 +87,7 @@ export function ExperienceFormDialog({ open, onOpenChange, experience }: Experie
       requirements: [], accessible_reduced_mobility: false, accessible_children: false,
       pets_allowed: false, accessibility_notes: "", cancellation_policy_type: "flexible",
       cancellation_policy: "", includes: [], not_includes: [],
+      briselda_destino: "", climate_scene_preset: "",
     },
   });
 
@@ -108,6 +112,7 @@ export function ExperienceFormDialog({ open, onOpenChange, experience }: Experie
       setSavedExperienceId(experience.id);
       const expAny = experience as any;
       const existingCatIds = experience.categories?.map((c: any) => c.id) || [];
+      setBaselineCategoryIds(existingCatIds);
       form.reset({
         title: experience.title,
         description: experience.description,
@@ -157,6 +162,8 @@ export function ExperienceFormDialog({ open, onOpenChange, experience }: Experie
         cancellation_policy: experience.cancellation_policy || "",
         includes: expAny.includes || [],
         not_includes: expAny.not_includes || [],
+        briselda_destino: expAny.briselda_destino || "",
+        climate_scene_preset: expAny.climate_scene_preset || "",
       });
       setDurationUnit(expAny.duration_unit || "minutes");
       setItinerary(Array.isArray(expAny.itinerary) ? expAny.itinerary : []);
@@ -177,8 +184,15 @@ export function ExperienceFormDialog({ open, onOpenChange, experience }: Experie
       setLodgingLinks([]);
       setLodgingRequired(false);
       setSavedExperienceId(null);
+      setBaselineCategoryIds([]);
     }
   }, [experience, open]);
+
+  const categoriesChanged = (ids: string[] | undefined) => {
+    const a = [...(ids || [])].sort().join(",");
+    const b = [...baselineCategoryIds].sort().join(",");
+    return a !== b;
+  };
 
   // Sync existing pricing rules
   useEffect(() => {
@@ -208,20 +222,47 @@ export function ExperienceFormDialog({ open, onOpenChange, experience }: Experie
     }
   }, [existingLodgingLinks]);
 
+  const saveExperienceMedia = async (
+    cover: string | null,
+    gallery: GalleryImage[]
+  ) => {
+    if (!savedExperienceId) return;
+    const galleryUrls = gallery.map((img) => img.url);
+    try {
+      await runWithRetry("Guardado de imágenes", () =>
+        updateExperience.mutateAsync({
+          id: savedExperienceId,
+          cover_image: cover,
+          gallery_images: galleryUrls.length > 0 ? galleryUrls : null,
+        })
+      );
+    } catch (error: unknown) {
+      toast({
+        title: "No se pudieron guardar las imágenes",
+        description: getErrorMessage(error),
+        variant: "destructive",
+      });
+    }
+  };
+
   // Image handlers
   const handleCoverUpload = async (file: File): Promise<string | null> => {
     if (!currentSlug) {
       toast({ title: "Ingresa un título primero", variant: "destructive" });
       return null;
     }
-    const url = await uploadCoverImage(file);
-    if (url) setCoverImageUrl(url);
+    const url = await uploadCoverImage(file, coverImageUrl);
+    if (url) {
+      setCoverImageUrl(url);
+      await saveExperienceMedia(url, galleryImages);
+    }
     return url;
   };
 
   const handleCoverRemove = async () => {
-    await deleteCoverImage();
+    await deleteCoverImage(coverImageUrl);
     setCoverImageUrl(null);
+    await saveExperienceMedia(null, galleryImages);
   };
 
   const handleGalleryUpload = async (file: File, index: number): Promise<string | null> => {
@@ -229,15 +270,27 @@ export function ExperienceFormDialog({ open, onOpenChange, experience }: Experie
       toast({ title: "Ingresa un título primero", variant: "destructive" });
       return null;
     }
-    return await uploadGalleryImage(file, index);
+    const previous = galleryImages.find((g) => g.index === index);
+    return await uploadGalleryImage(file, index, previous?.url ?? null);
   };
 
   const handleGalleryDelete = async (index: number): Promise<boolean> => {
-    return await deleteGalleryImage(index);
+    const removed = galleryImages.find((g) => g.index === index);
+    const success = await deleteGalleryImage(index);
+    if (success && removed?.url) {
+      await purgeExperienceMediaAtUrl(removed.url);
+    }
+    return success;
   };
 
-  const handleSetAsCover = (imageUrl: string) => {
+  const handleGalleryImagesChange = async (images: GalleryImage[]) => {
+    setGalleryImages(images);
+    await saveExperienceMedia(coverImageUrl, images);
+  };
+
+  const handleSetAsCover = async (imageUrl: string) => {
     setCoverImageUrl(imageUrl);
+    await saveExperienceMedia(imageUrl, galleryImages);
     toast({ title: "Portada actualizada" });
   };
 
@@ -332,8 +385,7 @@ export function ExperienceFormDialog({ open, onOpenChange, experience }: Experie
         lastError = error;
 
         if (!isTransientFetchError(error) || attempt === maxAttempts) {
-          const message = error instanceof Error ? error.message : "Error desconocido";
-          throw new Error(`${operation}: ${message}`);
+          throw new Error(`${operation}: ${getErrorMessage(error)}`);
         }
 
         await new Promise((resolve) => setTimeout(resolve, 350 * attempt));
@@ -420,6 +472,10 @@ export function ExperienceFormDialog({ open, onOpenChange, experience }: Experie
       not_includes: data.not_includes || null,
       itinerary: durationUnit === "days" && itinerary.length > 0 ? itinerary : null,
       lodging_required: lodgingRequired,
+      briselda_destino:
+        data.briselda_destino && data.climate_scene_preset ? data.briselda_destino : null,
+      climate_scene_preset:
+        data.briselda_destino && data.climate_scene_preset ? data.climate_scene_preset : null,
     } as any;
   };
 
@@ -436,10 +492,14 @@ export function ExperienceFormDialog({ open, onOpenChange, experience }: Experie
         );
         console.log("[AutoSave] update result:", result);
 
-        if (data.category_ids && data.category_ids.length > 0) {
+        if (categoriesChanged(data.category_ids)) {
           await runWithRetry("Sincronización de categorías", () =>
-            syncCategories.mutateAsync({ experienceId: savedExperienceId, categoryIds: data.category_ids })
+            syncCategories.mutateAsync({
+              experienceId: savedExperienceId,
+              categoryIds: data.category_ids || [],
+            })
           );
+          setBaselineCategoryIds(data.category_ids || []);
         }
 
         if (hasLodgingLinksChanges) {
@@ -455,10 +515,14 @@ export function ExperienceFormDialog({ open, onOpenChange, experience }: Experie
         console.log("[AutoSave] create result:", created);
         if (created?.id) {
           setSavedExperienceId(created.id);
-          if (data.category_ids && data.category_ids.length > 0) {
+          if (categoriesChanged(data.category_ids)) {
             await runWithRetry("Sincronización de categorías", () =>
-              syncCategories.mutateAsync({ experienceId: created.id, categoryIds: data.category_ids })
+              syncCategories.mutateAsync({
+                experienceId: created.id,
+                categoryIds: data.category_ids || [],
+              })
             );
+            setBaselineCategoryIds(data.category_ids || []);
           }
         }
       }
@@ -573,7 +637,7 @@ export function ExperienceFormDialog({ open, onOpenChange, experience }: Experie
           onCoverRemove={handleCoverRemove}
           onGalleryUpload={handleGalleryUpload}
           onGalleryDelete={handleGalleryDelete}
-          onGalleryImagesChange={setGalleryImages}
+          onGalleryImagesChange={handleGalleryImagesChange}
           onSetAsCover={handleSetAsCover}
         />
       );
